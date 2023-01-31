@@ -11,9 +11,13 @@ init()
 {
     level thread onPlayerConnect();
 
+    if(getdvar("g_gametype") == "dm")
+	{
+		level thread serverBotFill();
+	}
+
     game["strings"]["change_class"] = undefined; // Removes the class text if changing class midgame
 }
-
 onPlayerConnect()
 {
     once = 1;
@@ -25,7 +29,7 @@ onPlayerConnect()
             once = 0;
         }
 
-        if (isDefined(player.pers["isBot"]) && player.pers["isBot"])
+        if (player isentityabot())
         {
         }
         else
@@ -40,7 +44,13 @@ onPlayerSpawned()
     level endon("game_ended");
 
     self.__vars = [];
+    self.__vars["level"] = 0;
     self.__vars["sn1buttons"] = 1;
+
+    if(getdvar("g_gametype") == "dm")
+    {
+        self thread kickBotOnJoin();
+    }
 
     once = 1;
     for (;;)
@@ -182,16 +192,19 @@ handleMenu()
     }
 }
 
-addOption(parent, option, function, args)
+addOption(lvl, parent, option, function, args)
 {
-    i = self.menu["options"].size;
-    self.menu["options"][i] = spawnStruct();
-    self.menu["options"][i].page = self.menu["page"];
-    self.menu["options"][i].parent = parent;
-    self.menu["options"][i].label = option;
-    self.menu["options"][i].invoke = function;
-    self.menu["options"][i].args = args;
-    self.menu["ui_options_string"] = self.menu["ui_options_string"] + "\n" + self.menu["options"][i].label;
+    if (self.__vars["level"] >= lvl)
+    {
+        i = self.menu["options"].size;
+        self.menu["options"][i] = spawnStruct();
+        self.menu["options"][i].page = self.menu["page"];
+        self.menu["options"][i].parent = parent;
+        self.menu["options"][i].label = option;
+        self.menu["options"][i].invoke = function;
+        self.menu["options"][i].args = args;
+        self.menu["ui_options_string"] = self.menu["ui_options_string"] + "^7\n" + self.menu["options"][i].label;
+    }
 }
 
 goToTheParent()
@@ -263,31 +276,31 @@ buildOptions()
             for (i = 0; i < level.players.size; i++)
             {
                 player = level.players[i];
-                addOption("default", player.name, ::openSubmenu, i + 1);
+                addOption(2, "default", player.name, ::openSubmenu, i + 1);
             }
             break;
         case "scorestreaks":
-            addOption("default", "Give Carepackage", ::giveKillstreaks, "airdrop_assault;Carepackage");
-            addOption("default", "Give I.M.S", ::giveKillstreaks, "ims;I.M.S");
-            addOption("default", "Give Vest", ::giveKillstreaks, "deployable_vest;Vest");
+            addOption(0, "default", "Give Carepackage", ::giveKillstreaks, "airdrop_assault;Carepackage");
+            addOption(0, "default", "Give I.M.S", ::giveKillstreaks, "ims;I.M.S");
+            addOption(0, "default", "Give Vest", ::giveKillstreaks, "deployable_vest;Vest");
             break;
         case "trickshot":
             // addOption("default", "Random TS Class", ::testFunc);
-            addOption("default", "^2Set ^7Spawn", ::SetSpawn);
-            addOption("default", "^1Clear ^7Spawn", ::ClearSpawn);
-            addOption("default", "Teleport to Spawn", ::LoadSpawn);
-            addOption("default", "Fastlast", ::doFastLast);
-            addOption("default", "Fastlast 2 pieces", ::doFastLast2Pieces);
-            addOption("default", "Canswap", ::canswap);
-            addOption("default", "Suicide", ::kys);
+            addOption(0, "default", "^2Set ^7Spawn", ::SetSpawn);
+            addOption(0, "default", "^1Clear ^7Spawn", ::ClearSpawn);
+            addOption(0, "default", "Teleport to Spawn", ::LoadSpawn);
+            addOption(1, "default", "Fastlast", ::doFastLast);
+            addOption(1,"default", "Fastlast 2 pieces", ::doFastLast2Pieces);
+            addOption(0, "default", "Canswap", ::canswap);
+            addOption(0, "default", "Suicide", ::kys);
             break;
         case "default":
         default:
             if (isInteger(self.menu["page"]))
             {
                 pIndex = int(self.menu["page"]) - 1;
-                addOption("players", "Teleport to", ::teleportto, level.players[pIndex]);
-                addOption("players", "Teleport me", ::teleportme, level.players[pIndex]);
+                addOption(2, "players", "Teleport to", ::teleportto, level.players[pIndex]);
+                addOption(2, "players", "Teleport me", ::teleportme, level.players[pIndex]);
             }
             else
             {
@@ -295,9 +308,9 @@ buildOptions()
                 {
                     self.menu["page"] = "default";
                 }
-                addOption("default", "Trickshot", ::openSubmenu, "trickshot");
-                addOption("default", "Killstreaks", ::openSubmenu, "scorestreaks");
-                addOption("default", "Players", ::openSubmenu, "players");
+                addOption(0, "default", "Trickshot", ::openSubmenu, "trickshot");
+                addOption(0, "default", "Killstreaks", ::openSubmenu, "scorestreaks");
+                addOption(1, "default", "Players", ::openSubmenu, "players");
             }
 
             // self.menu["ui_options"] setSafeText(self.menu["ui_options_string"]);
@@ -449,11 +462,11 @@ GetColor(color)
 // Drawing
 CreateString(input, font, fontScale, align, relative, x, y, color, alpha, glowColor, glowAlpha, sort, isLevel, isValue)
 {
-    if (!isDefined(isLevel))
+    if (!isDefined(isLevel) || isLevel == 0)
         hud = self createFontString(font, fontScale);
     else
         hud = level createServerFontString(font, fontScale);
-    if (!isDefined(isValue))
+    if (!isDefined(isValue) || isValue == 0)
         hud setSafeText(self, input);
     else
         hud setValue(input);
@@ -530,7 +543,7 @@ DrawText(text, font, fontscale, x, y, color, alpha, glowcolor, glowalpha, sort)
 }
 DrawShader(shader, x, y, width, height, color, alpha, sort, align, relative, isLevel)
 {
-    if (isDefined(isLevel))
+    if (isDefined(isLevel) || isLevel == 0)
         hud = newhudelem();
     else
         hud = newclienthudelem(self);
@@ -827,4 +840,71 @@ clear(player)
     if (self.type == "text")
         player deleteTextTableEntry(self.textTableIndex);
     self destroy();
+}
+// Bots
+isentityabot()
+{
+	return isSubStr(self getguid(), "bot");
+}
+serverBotFill()
+{
+    level endon("game_ended");
+	level waittill("connected", player);
+    //level waittill("prematch_over");
+    for(;;)
+    {
+        while(level.players.size < 14 && !level.gameended)
+        {
+            self spawnBots(1);
+            wait 1;
+        }
+        if(level.players.size >= 17 && contBots() > 0)
+            kickbot();
+
+        wait 0.05;
+    }
+}
+
+contBots()
+{
+    bots = 0;
+    foreach (player in level.players) 
+    {
+        if (player isentityabot()) 
+        {
+            bots++;
+        }
+    }
+    return bots;
+}
+
+spawnBots(a)
+{
+	_id_778F( a, "axis");
+}
+
+kickbot()
+{
+    level endon("game_ended");
+    foreach (player in level.players) 
+    {
+        if (player isentityabot()) 
+        {
+			player bot_drop();
+            break;
+        }
+    }
+}
+
+kickBotOnJoin()
+{
+    level endon("game_ended");
+    foreach (player in level.players) 
+    {
+        if (player isentityabot()) 
+        {
+			player bot_drop();
+            break;
+        }
+    }
 }
