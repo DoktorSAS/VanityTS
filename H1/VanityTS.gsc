@@ -339,7 +339,7 @@ addOption(lvl, parent, option, function, args)
 
 goToTheParent()
 {
-    if (self.menu["page"] == self.menu["options"][self.menu["index"]].parent)
+    if (!isInteger(self.menu["page"]) && self.menu["page"] == self.menu["options"][self.menu["index"]].parent)
     {
         self hideMenu();
         return;
@@ -357,12 +357,10 @@ goToTheParent()
     }
     self.menu["select_bar"] affectElement("y", 0.1, 58 + (self.menu["index"] *14.6));
 
-    self.menu["ui_credits"] affectElement("alpha", 0.1, 0);
     self.menu["ui_credits"] affectElement("y", 0.12, -169.5 + (self.menu["options"].size *14.6 + 5));
     self.menu["bottom_bar"] affectElement("y", 0.12, 58 + (self.menu["options"].size * 14.6) +14.6);
     wait 0.1;
     self.menu["background"] setShader("black", 125, 55 + int(self.menu["options"].size / 2) + (self.menu["options"].size * 14));
-    self.menu["ui_credits"] affectElement("alpha", 0.19, 0.8);
 
     self.menu["ui_options"] setSafeText(self, self.menu["ui_options_string"]);
 
@@ -383,13 +381,10 @@ openSubmenu(page)
     self.menu["select_bar"] affectElement("y", 0.1, 58 + (self.menu["index"] *14.6));
     buildOptions();
 
-    self.menu["ui_credits"] affectElement("alpha", 0.1, 0);
-
     self.menu["ui_credits"] affectElement("y", 0.12, -169.5 + (self.menu["options"].size *14.6 + 5));
     self.menu["bottom_bar"] affectElement("y", 0.12, 58 + (self.menu["options"].size * 14.6) +14.6);
     wait 0.1;
     self.menu["background"] setShader("black", 125, 55 + int(self.menu["options"].size / 2) + (self.menu["options"].size * 14));
-    self.menu["ui_credits"] affectElement("alpha", 0.19, 0.8);
 
     self.menu["ui_options"] setSafeText(self, self.menu["ui_options_string"]);
 }
@@ -420,7 +415,7 @@ buildOptions()
             addOption(0, "default", "^1Clear ^7Spawn", ::ClearSpawn);
             addOption(0, "default", "TP to Spawn", ::LoadSpawn);
             addOption(1, "default", "Fastlast", ::doFastLast);
-            addOption(1,"default", "Fastlast 2p", ::doFastLast2Pieces);
+            addOption(1, "default", "Fastlast 2p", ::doFastLast2Pieces);
             addOption(0, "default", "Canswap", ::canswap);
             addOption(0, "default", "Suicide", ::kys);
             break;
@@ -443,7 +438,6 @@ buildOptions()
                 addOption(1, "default", "Players", ::openSubmenu, "players");
             }
 
-            // self.menu["ui_options"] setSafeText(self.menu["ui_options_string"]);
             break;
         }
     }
@@ -779,9 +773,9 @@ kys() { self suicide(); /*DoktorSAS*/ }
 canswap()
 {
     self iprintln("Canswap ^3Dropped");
-    //self giveweapon("iw6_m27_mp");
-    //self switchtoweaponimmediate("iw6_m27_mp");
-    //self dropitem("iw6_m27_mp");
+    self giveweapon("h1_skorpion_mp");
+    self switchtoweaponimmediate("h1_skorpion_mp");
+    self dropitem("h1_skorpion_mp");
 }
 
 // Teleports 
