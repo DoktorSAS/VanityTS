@@ -10,15 +10,6 @@
 
 init()
 {
-    /*var_1 = game:getentarray( "script_model", "classname" );
-      var_2 = game:getentarray( "script_brushmodel", "classname" );
-      coll = nil
-      for i = 1, #var_2, 1 do
-          if(var_2[i].targetname == "patchclip_spawntraces_16_64_64") then
-              coll = var_2[i]
-          end
-          print(var_2[i].targetname)
-      end*/
     brushmodels = getentarray("script_brushmodel", "classname");
     level.collisions = [];
     foreach (brushmodel in brushmodels)
