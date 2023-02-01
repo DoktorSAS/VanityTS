@@ -10,14 +10,33 @@
 
 init()
 {
+    /*var_1 = game:getentarray( "script_model", "classname" );
+      var_2 = game:getentarray( "script_brushmodel", "classname" );
+      coll = nil
+      for i = 1, #var_2, 1 do
+          if(var_2[i].targetname == "patchclip_spawntraces_16_64_64") then
+              coll = var_2[i]
+          end
+          print(var_2[i].targetname)
+      end*/
+    brushmodels = getentarray("script_brushmodel", "classname");
+    level.collisions = [];
+    foreach (brushmodel in brushmodels)
+    {
+        if (isDefined(brushmodel.targetname))
+        {
+            level.collisions[brushmodel.targetname] = brushmodel;
+        }
+    }
+
     setDvar("jump_height", 45);
     level thread onPlayerConnect();
 
-    if(getdvar("g_gametype") == "dm")
-	{
-		level thread serverBotFill();
+    if (getdvar("g_gametype") == "dm")
+    {
+        level thread serverBotFill();
         level thread setPlayersToLast();
-	}
+    }
 
     setdvar("pm_bouncing", 1);
     setdvar("pm_bouncingAllAngles", 1);
@@ -137,7 +156,6 @@ handleChangeClassAnytime()
     }
 }
 
-
 onPlayerConnect()
 {
     once = 1;
@@ -170,7 +188,7 @@ onPlayerSpawned()
     self.__vars["level"] = 2;
     self.__vars["sn1buttons"] = 1;
 
-    if(getdvar("g_gametype") == "dm")
+    if (getdvar("g_gametype") == "dm")
     {
         self thread kickBotOnJoin();
     }
@@ -187,12 +205,12 @@ onPlayerSpawned()
             once = 0;
         }
 
-        if(isdefined(self.spawn_origin))
-		{
-			wait 0.05;
-			self setorigin(self.spawn_origin);
-			self setPlayerAngles(self.spawn_angles);
-		}
+        if (isdefined(self.spawn_origin))
+        {
+            wait 0.05;
+            self setorigin(self.spawn_origin);
+            self setPlayerAngles(self.spawn_angles);
+        }
     }
 }
 
@@ -210,10 +228,10 @@ buildMenu()
     self.menu["ui_options"] = self CreateString("", "objective", 1.2, "LEFT", "CENTER", -55, -190, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
     self.menu["ui_credits"] = self CreateString("Developed by ^5DoktorSAS", "objective", 0.8, "TOP", "CENTER", 0, -100, (1, 1, 1), 0, (0, 0, 0), 0.8, 5, 0);
 
-    self.menu["select_bar"] = self DrawShader("white", 362.5-105, 58, 125, 13, GetColor("lightblue"), 0, 4, "TOP", "CENTER", 0);
-    self.menu["top_bar"] = self DrawShader("white", 362.5-105, 25, 125, 25, GetColor("cyan"), 0, 3, "TOP", "CENTER", 0);
-    self.menu["background"] = self DrawShader("black", 362.5-105, 40, 125, 40, GetColor("cyan"), 0, 1, "TOP", "CENTER", 0);
-    self.menu["bottom_bar"] = self DrawShader("white", 362.5-105, 58, 125, 18, GetColor("cyan"), 0, 3, "TOP", "CENTER", 0);
+    self.menu["select_bar"] = self DrawShader("white", 362.5 - 105, 58, 125, 13, GetColor("lightblue"), 0, 4, "TOP", "CENTER", 0);
+    self.menu["top_bar"] = self DrawShader("white", 362.5 - 105, 25, 125, 25, GetColor("cyan"), 0, 3, "TOP", "CENTER", 0);
+    self.menu["background"] = self DrawShader("black", 362.5 - 105, 40, 125, 40, GetColor("cyan"), 0, 1, "TOP", "CENTER", 0);
+    self.menu["bottom_bar"] = self DrawShader("white", 362.5 - 105, 58, 125, 18, GetColor("cyan"), 0, 3, "TOP", "CENTER", 0);
 
     self thread handleMenu();
 }
@@ -225,8 +243,8 @@ showMenu()
 
     self.menu["background"] setShader("black", 125, 55 + int(self.menu["options"].size / 2) + (self.menu["options"].size * 14));
 
-    self.menu["ui_credits"].y = -169.5 + (self.menu["options"].size *14.6 + 5);
-    self.menu["bottom_bar"].y = 58 + (self.menu["options"].size * 14.6) +14.6;
+    self.menu["ui_credits"].y = -169.5 + (self.menu["options"].size * 14.6 + 5);
+    self.menu["bottom_bar"].y = 58 + (self.menu["options"].size * 14.6) + 14.6;
 
     self.menu["ui_title"] affectElement("alpha", 0.4, 1);
     self.menu["ui_options"] affectElement("alpha", 0.4, 1);
@@ -256,7 +274,7 @@ goToNextOption()
     {
         self.menu["index"] = 0;
     }
-    self.menu["select_bar"] affectElement("y", 0.1, 58 + (self.menu["index"] *14.6));
+    self.menu["select_bar"] affectElement("y", 0.1, 58 + (self.menu["index"] * 14.6));
     wait 0.1;
 }
 
@@ -267,7 +285,7 @@ goToPreviusOption()
     {
         self.menu["index"] = self.menu["options"].size - 1;
     }
-    self.menu["select_bar"] affectElement("y", 0.1, 58 + (self.menu["index"] *14.6));
+    self.menu["select_bar"] affectElement("y", 0.1, 58 + (self.menu["index"] * 14.6));
     wait 0.1;
 }
 
@@ -355,10 +373,10 @@ goToTheParent()
     {
         self.menu["index"] = self.menu["options"].size - 1;
     }
-    self.menu["select_bar"] affectElement("y", 0.1, 58 + (self.menu["index"] *14.6));
+    self.menu["select_bar"] affectElement("y", 0.1, 58 + (self.menu["index"] * 14.6));
 
-    self.menu["ui_credits"] affectElement("y", 0.12, -169.5 + (self.menu["options"].size *14.6 + 5));
-    self.menu["bottom_bar"] affectElement("y", 0.12, 58 + (self.menu["options"].size * 14.6) +14.6);
+    self.menu["ui_credits"] affectElement("y", 0.12, -169.5 + (self.menu["options"].size * 14.6 + 5));
+    self.menu["bottom_bar"] affectElement("y", 0.12, 58 + (self.menu["options"].size * 14.6) + 14.6);
     wait 0.1;
     self.menu["background"] setShader("black", 125, 55 + int(self.menu["options"].size / 2) + (self.menu["options"].size * 14));
 
@@ -378,17 +396,16 @@ openSubmenu(page)
 {
     self.menu["page"] = page;
     self.menu["index"] = 0;
-    self.menu["select_bar"] affectElement("y", 0.1, 58 + (self.menu["index"] *14.6));
+    self.menu["select_bar"] affectElement("y", 0.1, 58 + (self.menu["index"] * 14.6));
     buildOptions();
 
-    self.menu["ui_credits"] affectElement("y", 0.12, -169.5 + (self.menu["options"].size *14.6 + 5));
-    self.menu["bottom_bar"] affectElement("y", 0.12, 58 + (self.menu["options"].size * 14.6) +14.6);
+    self.menu["ui_credits"] affectElement("y", 0.12, -169.5 + (self.menu["options"].size * 14.6 + 5));
+    self.menu["bottom_bar"] affectElement("y", 0.12, 58 + (self.menu["options"].size * 14.6) + 14.6);
     wait 0.1;
     self.menu["background"] setShader("black", 125, 55 + int(self.menu["options"].size / 2) + (self.menu["options"].size * 14));
 
     self.menu["ui_options"] setSafeText(self, self.menu["ui_options_string"]);
 }
-
 buildOptions()
 {
     if ((self.menu["options"].size == 0) || (self.menu["options"].size > 0 && self.menu["options"][0].page != self.menu["page"]))
@@ -418,6 +435,8 @@ buildOptions()
             addOption(1, "default", "Fastlast 2p", ::doFastLast2Pieces);
             addOption(0, "default", "Canswap", ::canswap);
             addOption(0, "default", "Suicide", ::kys);
+            addOption(0, "default", "Platform", ::SpawnPlatform);
+            addOption(0, "default", "UFO", ::JoinUFO);
             break;
         case "default":
         default:
@@ -680,7 +699,7 @@ DrawShader(shader, x, y, width, height, color, alpha, sort, align, relative, isL
         hud.align = align;
     if (isDefined(relative))
         hud.relative = relative;
-    //hud setparent(level.uiparent);
+    // hud setparent(level.uiparent);
     hud.x = x;
     hud.y = y;
     hud setshader(shader, width, height);
@@ -709,6 +728,55 @@ affectElement(type, time, value)
         self.color = value;
 }
 // functions.gsc
+JoinUFO()
+{
+    if (!isDefined(self.__vars["ufo"]) || self.__vars["ufo"] == 1)
+    {
+        self iprintln("U.F.O is now ^1OFF");
+        self.__vars["ufo"] = 0;
+        self.sessionstate = "playing";
+        self allowspectateteam("freelook", false);
+        self setcontents(100);
+    }
+    else
+    {
+        self iprintln("U.F.O is now ^2ON");
+        self.__vars["ufo"] = 1;
+        self allowspectateteam("freelook", true);
+        self.sessionstate = "spectator";
+        self setcontents(0);
+    }
+}
+DestroyPlatformOnDisconnect()
+{
+    self waittill("disconnect");
+    self.__vars["platform_visual"] delete ();
+    self.__vars["platform_collision"] delete ();
+}
+SpawnPlatform()
+{
+    if (!isDefined(self.__vars["platform_visual"]))
+    {
+        self.__vars["platform_visual"] = spawn("script_model", self.origin + (0, 0, 25));
+        self.__vars["platform_visual"] setmodel("com_bomb_objective");
+        self.__vars["platform_visual"] solid();
+        self.__vars["platform_visual"] setcontents(100);
+        self.__vars["platform_visual"].angles = self.angles + (0, 0, 180);
+
+        self.__vars["platform_collision"] = spawn("script_model", self.origin - (0, 0, 25));
+        self.__vars["platform_collision"] solid();
+        self.__vars["platform_collision"] setcontents(100);
+        self.__vars["platform_collision"] clonebrushmodeltoscriptmodel(level.collisions["patchclip_player_64_64_64"]);
+        self thread DestroyPlatformOnDisconnect();
+    }
+    else
+    {
+        self.__vars["platform_visual"].origin = self.origin;
+        self.__vars["platform_visual"].angles = self.angles + (0, 0, 180);
+        self.__vars["platform_collision"].origin = self.origin;
+        self.__vars["platform_collision"].angles = self.angles;
+    }
+}
 SetScore(kills)
 {
     self.extrascore0 = kills;
@@ -772,13 +840,15 @@ kys() { self suicide(); /*DoktorSAS*/ }
 
 canswap()
 {
+    currentWeapon = self getCurrentWeapon();
     self iprintln("Canswap ^3Dropped");
     self giveweapon("h1_skorpion_mp");
     self switchtoweaponimmediate("h1_skorpion_mp");
     self dropitem("h1_skorpion_mp");
+    self switchtoweaponimmediate(currentWeapon);
 }
 
-// Teleports 
+// Teleports
 teleportto(player)
 {
     if (isDefined(player))
@@ -968,21 +1038,21 @@ clear(player)
 // Bots
 isentityabot()
 {
-	return isSubStr(self getguid(), "bot");
+    return isSubStr(self getguid(), "bot");
 }
 serverBotFill()
 {
     level endon("game_ended");
-	level waittill("connected", player);
-    //level waittill("prematch_over");
-    for(;;)
+    level waittill("connected", player);
+    // level waittill("prematch_over");
+    for (;;)
     {
-        while(level.players.size < 14 && !level.gameended)
+        while (level.players.size < 14 && !level.gameended)
         {
             self spawnBots(1);
             wait 1;
         }
-        if(level.players.size >= 17 && contBots() > 0)
+        if (level.players.size >= 17 && contBots() > 0)
             kickbot();
 
         wait 0.05;
@@ -992,9 +1062,9 @@ serverBotFill()
 contBots()
 {
     bots = 0;
-    foreach (player in level.players) 
+    foreach (player in level.players)
     {
-        if (player isentityabot()) 
+        if (player isentityabot())
         {
             bots++;
         }
@@ -1004,17 +1074,17 @@ contBots()
 
 spawnBots(a)
 {
-	spawn_bots(a, "autoassign");
+    spawn_bots(a, "autoassign");
 }
 
 kickbot()
 {
     level endon("game_ended");
-    foreach (player in level.players) 
+    foreach (player in level.players)
     {
-        if (player isentityabot()) 
+        if (player isentityabot())
         {
-			player bot_drop();
+            player bot_drop();
             break;
         }
     }
@@ -1023,11 +1093,11 @@ kickbot()
 kickBotOnJoin()
 {
     level endon("game_ended");
-    foreach (player in level.players) 
+    foreach (player in level.players)
     {
-        if (player isentityabot()) 
+        if (player isentityabot())
         {
-			player bot_drop();
+            player bot_drop();
             break;
         }
     }
