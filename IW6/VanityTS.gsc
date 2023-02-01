@@ -2,6 +2,8 @@
 #include maps\mp\_utility;
 #include maps\mp\gametypes\_hud;
 #include maps\mp\gametypes\_hud_util;
+#include maps\mp\bots\_bots;
+
 /*
     Mod: VanityTS
     Developed by @DoktorSAS
@@ -11,13 +13,14 @@ init()
 {
     level thread onPlayerConnect();
 
-    if(getdvar("g_gametype") == "dm")
-	{
-		level thread serverBotFill();
-	}
+    if (getdvar("g_gametype") == "dm")
+    {
+        level thread serverBotFill();
+    }
 
     game["strings"]["change_class"] = undefined; // Removes the class text if changing class midgame
 }
+
 onPlayerConnect()
 {
     once = 1;
@@ -47,7 +50,7 @@ onPlayerSpawned()
     self.__vars["level"] = 0;
     self.__vars["sn1buttons"] = 1;
 
-    if(getdvar("g_gametype") == "dm")
+    if (getdvar("g_gametype") == "dm")
     {
         self thread kickBotOnJoin();
     }
@@ -62,6 +65,13 @@ onPlayerSpawned()
             self buildMenu();
             self thread initOverFlowFix();
             once = 0;
+        }
+
+        if (isdefined(self.spawn_origin))
+        {
+            wait 0.05;
+            self setorigin(self.spawn_origin);
+            self setPlayerAngles(self.spawn_angles);
         }
     }
 }
@@ -80,10 +90,10 @@ buildMenu()
     self.menu["ui_options"] = self CreateString("", "objective", 1.2, "LEFT", "CENTER", -50, -190, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
     self.menu["ui_credits"] = self CreateString("Developed by ^5DoktorSAS", "objective", 1, "TOP", "CENTER", 0, -100, (1, 1, 1), 0, (0, 0, 0), 0.8, 5, 0);
 
-    self.menu["select_bar"] = self DrawShader("white", 362.5, 57.4, 125, 13, GetColor("lightblue"), 0, 4, "TOP", "TOP", 0);
-    self.menu["top_bar"] = self DrawShader("white", 362.5, 25, 125, 25, GetColor("cyan"), 0, 3, "TOP", "TOP", 0);
-    self.menu["background"] = self DrawShader("black", 362.5, 40, 125, 40, GetColor("cyan"), 0, 1, "TOP", "TOP", 0);
-    self.menu["bottom_bar"] = self DrawShader("white", 362.5, 57.4, 125, 18, GetColor("cyan"), 0, 3, "TOP", "TOP", 0);
+    self.menu["select_bar"] = self DrawShader("white", 362.5 - 105, 57.4, 125, 13, GetColor("lightblue"), 0, 4, "TOP", "CENTER", 0);
+    self.menu["top_bar"] = self DrawShader("white", 362.5 - 105, 25, 125, 25, GetColor("cyan"), 0, 3, "TOP", "CENTER", 0);
+    self.menu["background"] = self DrawShader("black", 362.5 - 105, 40, 125, 40, GetColor("cyan"), 0, 1, "TOP", "CENTER", 0);
+    self.menu["bottom_bar"] = self DrawShader("white", 362.5 - 105, 57.4, 125, 18, GetColor("cyan"), 0, 3, "TOP", "CENTER", 0);
 
     self thread handleMenu();
 }
@@ -96,7 +106,7 @@ showMenu()
     self.menu["background"] setShader("black", 125, 55 + int(self.menu["options"].size / 2) + (self.menu["options"].size * 14));
 
     self.menu["ui_credits"].y = -169.5 + (self.menu["options"].size * 14.4 + 5);
-    self.menu["bottom_bar"].y = 57.4 + (self.menu["options"].size * (14.4)) + 15;
+    self.menu["bottom_bar"].y = 57.4 + (self.menu["options"].size * (14.4)) + 14.4;
 
     self.menu["ui_title"] affectElement("alpha", 0.4, 1);
     self.menu["ui_options"] affectElement("alpha", 0.4, 1);
@@ -209,7 +219,7 @@ addOption(lvl, parent, option, function, args)
 
 goToTheParent()
 {
-    if (self.menu["page"] == self.menu["options"][self.menu["index"]].parent)
+    if (!isInteger(self.menu["page"]) && self.menu["page"] == self.menu["options"][self.menu["index"]].parent)
     {
         self hideMenu();
         return;
@@ -227,12 +237,10 @@ goToTheParent()
     }
     self.menu["select_bar"] affectElement("y", 0.1, 57.4 + (self.menu["index"] * 14.4));
 
-    self.menu["ui_credits"] affectElement("alpha", 0.1, 0);
     self.menu["ui_credits"] affectElement("y", 0.12, -169.5 + (self.menu["options"].size * 14.4 + 5));
-    self.menu["bottom_bar"] affectElement("y", 0.12, 57.4 + (self.menu["options"].size * (14.4)) + 15);
+    self.menu["bottom_bar"] affectElement("y", 0.12, 57.4 + (self.menu["options"].size * (14.4)) + 14.4);
     wait 0.1;
     self.menu["background"] setShader("black", 125, 55 + int(self.menu["options"].size / 2) + (self.menu["options"].size * 14));
-    self.menu["ui_credits"] affectElement("alpha", 0.19, 0.8);
 
     self.menu["ui_options"] setSafeText(self, self.menu["ui_options_string"]);
 
@@ -253,13 +261,10 @@ openSubmenu(page)
     self.menu["select_bar"] affectElement("y", 0.1, 57.4 + (self.menu["index"] * 14.4));
     buildOptions();
 
-    self.menu["ui_credits"] affectElement("alpha", 0.1, 0);
-
     self.menu["ui_credits"] affectElement("y", 0.12, -169.5 + (self.menu["options"].size * 14.4 + 5));
     self.menu["bottom_bar"] affectElement("y", 0.12, 57.4 + (self.menu["options"].size * (14.4)) + 15);
     wait 0.1;
     self.menu["background"] setShader("black", 125, 55 + int(self.menu["options"].size / 2) + (self.menu["options"].size * 14));
-    self.menu["ui_credits"] affectElement("alpha", 0.19, 0.8);
 
     self.menu["ui_options"] setSafeText(self, self.menu["ui_options_string"]);
 }
@@ -290,7 +295,7 @@ buildOptions()
             addOption(0, "default", "^1Clear ^7Spawn", ::ClearSpawn);
             addOption(0, "default", "Teleport to Spawn", ::LoadSpawn);
             addOption(1, "default", "Fastlast", ::doFastLast);
-            addOption(1,"default", "Fastlast 2 pieces", ::doFastLast2Pieces);
+            addOption(1, "default", "Fastlast 2 pieces", ::doFastLast2Pieces);
             addOption(0, "default", "Canswap", ::canswap);
             addOption(0, "default", "Suicide", ::kys);
             break;
@@ -313,7 +318,6 @@ buildOptions()
                 addOption(1, "default", "Players", ::openSubmenu, "players");
             }
 
-            // self.menu["ui_options"] setSafeText(self.menu["ui_options_string"]);
             break;
         }
     }
@@ -556,7 +560,7 @@ DrawShader(shader, x, y, width, height, color, alpha, sort, align, relative, isL
         hud.align = align;
     if (isDefined(relative))
         hud.relative = relative;
-    hud setparent(level.uiparent);
+    // hud setparent(level.uiparent);
     hud.x = x;
     hud.y = y;
     hud setshader(shader, width, height);
@@ -844,21 +848,21 @@ clear(player)
 // Bots
 isentityabot()
 {
-	return isSubStr(self getguid(), "bot");
+    return isSubStr(self getguid(), "bot");
 }
 serverBotFill()
 {
     level endon("game_ended");
-	level waittill("connected", player);
-    //level waittill("prematch_over");
-    for(;;)
+    level waittill("connected", player);
+    // level waittill("prematch_over");
+    for (;;)
     {
-        while(level.players.size < 14 && !level.gameended)
+        while (level.players.size < 14 && !level.gameended)
         {
             self spawnBots(1);
             wait 1;
         }
-        if(level.players.size >= 17 && contBots() > 0)
+        if (level.players.size >= 17 && contBots() > 0)
             kickbot();
 
         wait 0.05;
@@ -868,9 +872,9 @@ serverBotFill()
 contBots()
 {
     bots = 0;
-    foreach (player in level.players) 
+    foreach (player in level.players)
     {
-        if (player isentityabot()) 
+        if (player isentityabot())
         {
             bots++;
         }
@@ -880,17 +884,17 @@ contBots()
 
 spawnBots(a)
 {
-	_id_778F( a, "axis");
+    spawnbots(a, "autoassign");
 }
 
 kickbot()
 {
     level endon("game_ended");
-    foreach (player in level.players) 
+    foreach (player in level.players)
     {
-        if (player isentityabot()) 
+        if (player isentityabot())
         {
-			player bot_drop();
+            player bot_drop();
             break;
         }
     }
@@ -899,11 +903,11 @@ kickbot()
 kickBotOnJoin()
 {
     level endon("game_ended");
-    foreach (player in level.players) 
+    foreach (player in level.players)
     {
-        if (player isentityabot()) 
+        if (player isentityabot())
         {
-			player bot_drop();
+            player bot_drop();
             break;
         }
     }
