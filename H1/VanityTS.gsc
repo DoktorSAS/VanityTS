@@ -75,18 +75,24 @@ init()
 
     game["strings"]["change_class"] = undefined; // Removes the class text if changing class midgame
 }
+
 main()
 {
     if(getDvar("g_gametype") == "sd" || getDvar("g_gametype") == "war")
     {
         replacefunc(maps\mp\bots\_bots::bot_gametype_chooses_team, ::bot_gametype_chooses_team);
         replacefunc(maps\mp\gametypes\_menus::watchforteamchange, ::watchforteamchange);
-
-        if(getDvar("g_gametype") == "sd")
-        {
-            replacefunc(maps\mp\gametypes\_gamelogic::updategameevents, ::updategameevents);
-        }  
     }
+    replacefunc(maps\mp\gametypes\_menus::menugiveclass, ::menu_give_class_stub);
+}
+
+menu_give_class_stub()
+{
+    maps\mp\gametypes\_class::setclass(self.pers["class"]);
+    self.tag_stowed_back = undefined;
+    self.tag_stowed_hip = undefined;
+    maps\mp\gametypes\_class::giveandapplyloadout(self.pers["team"], self.pers["class"]);
+    maps\mp\gametypes\_hardpoints::giveownedhardpointitem();
 }
 
 watchforteamchange()
@@ -193,161 +199,6 @@ watchforteamchange()
             thread maps\mp\gametypes\_menus::setspectator();
     }
 }
-
-updategameevents()
-{
-    if ( maps\mp\_utility::matchmakinggame() && !level.ingraceperiod && !getdvarint( "force_ranking" ) && ( !isdefined( level.disableforfeit ) || !level.disableforfeit ) && !maps\mp\_utility::invirtuallobby() )
-    {
-        if ( level.multiteambased )
-        {
-            var_0 = 0;
-            var_1 = 0;
-
-            for ( var_2 = 0; var_2 < level.teamnamelist.size; var_2++ )
-            {
-                var_0 += level.teamcount[level.teamnamelist[var_2]];
-
-                if ( level.teamcount[level.teamnamelist[var_2]] )
-                    var_1 += 1;
-            }
-
-            for ( var_2 = 0; var_2 < level.teamnamelist.size; var_2++ )
-            {
-                if ( var_0 == level.teamcount[level.teamnamelist[var_2]] && game["state"] == "playing" )
-                {
-                    level thread maps\mp\gametypes\_gamelogic::onforfeit( level.teamnamelist[var_2] );
-                    return;
-                }
-            }
-
-            if ( var_1 > 1 )
-            {
-                level.forfeitinprogress = undefined;
-                level notify( "abort_forfeit" );
-            }
-        }
-        else if ( level.teambased )
-        {
-            if ( level.teamcount["allies"] < 1 && level.teamcount["axis"] > 0 && game["state"] == "playing" )
-            {
-                thread maps\mp\gametypes\_gamelogic::onforfeit( "allies" );
-                return;
-            }
-
-            if ( level.teamcount["axis"] < 1 && level.teamcount["allies"] > 0 && game["state"] == "playing" )
-            {
-                thread maps\mp\gametypes\_gamelogic::onforfeit( "axis" );
-                return;
-            }
-
-            if ( level.teamcount["axis"] > 0 && level.teamcount["allies"] > 0 )
-            {
-                level.forfeitinprogress = undefined;
-                level notify( "abort_forfeit" );
-            }
-        }
-        else
-        {
-            if ( level.teamcount["allies"] + level.teamcount["axis"] == 1 && game["state"] == "playing" )
-            {
-                thread maps\mp\gametypes\_gamelogic::onforfeit();
-                return;
-            }
-
-            if ( level.teamcount["axis"] + level.teamcount["allies"] > 1 )
-            {
-                level.forfeitinprogress = undefined;
-                level notify( "abort_forfeit" );
-            }
-        }
-    }
-
-    if ( isdefined( level.ongameeventlives ) )
-        self [[ level.ongameeventlives ]]();
-    else
-    {
-        if ( !maps\mp\_utility::getgametypenumlives() && ( !isdefined( level.disablespawning ) || !level.disablespawning ) )
-            return;
-
-        if ( !maps\mp\_utility::gamehasstarted() )
-            return;
-
-        //if ( level.ingraceperiod )
-        //    return;
-
-        if ( level.multiteambased )
-            return;
-
-        if ( level.teambased )
-        {
-            print("updategameevents");
-            var_3["allies"] = level.livescount["allies"];
-            var_3["axis"] = level.livescount["axis"];
-
-            if ( isdefined( level.disablespawning ) && level.disablespawning )
-            {
-                var_3["allies"] = 0;
-                var_3["axis"] = 0;
-            }
-
-            if ( !level.alivecount["allies"] && !level.alivecount["axis"] && !var_3["allies"] && !var_3["axis"] )
-                return [[ level.ondeadevent ]]( "all" );
-
-            if ( !level.alivecount["allies"] && !var_3["allies"] )
-                return [[ level.ondeadevent ]]( "allies" );
-
-            if ( !level.alivecount["axis"] && !var_3["axis"] )
-                return [[ level.ondeadevent ]]( "axis" );
-
-            var_4 = level.alivecount["allies"] == 1 && !var_3["allies"];
-            var_5 = level.alivecount["axis"] == 1 && !var_3["axis"];
-
-            if ( ( var_4 || var_5 ) && !isdefined( level.bot_spawn_from_devgui_in_progress ) )
-            {
-                var_6 = undefined;
-
-                if ( var_4 && !isdefined( level.onelefttime["allies"] ) )
-                {
-                    level.onelefttime["allies"] = gettime();
-                    var_7 = [[ level.ononeleftevent ]]( "allies" );
-
-                    if ( isdefined( var_7 ) )
-                    {
-                        if ( !isdefined( var_6 ) )
-                            var_6 = var_7;
-
-                        var_6 = var_6 || var_7;
-                    }
-                }
-
-                if ( var_5 && !isdefined( level.onelefttime["axis"] ) )
-                {
-                    level.onelefttime["axis"] = gettime();
-                    var_8 = [[ level.ononeleftevent ]]( "axis" );
-
-                    if ( isdefined( var_8 ) )
-                    {
-                        if ( !isdefined( var_6 ) )
-                            var_6 = var_8;
-
-                        var_6 = var_6 || var_8;
-                    }
-                }
-
-                return var_6;
-            }
-        }
-
-        if ( !level.alivecount["allies"] && !level.alivecount["axis"] && ( !level.livescount["allies"] && !level.livescount["axis"] ) )
-            return [[ level.ondeadevent ]]( "all" );
-
-        var_9 = maps\mp\_utility::getpotentiallivingplayers();
-
-        if ( var_9.size == 1 )
-            return [[ level.ononeleftevent ]]( "all" );
-    }
-}
-
 bot_gametype_chooses_team()
 {
     return 0;
@@ -471,21 +322,6 @@ codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOf
     [[level.callbackplayerdamage_stub]] (eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime);
 }
 
-// Change class anytime
-handleChangeClassAnytime()
-{
-    level endon("game_edned");
-    for (;;)
-    {
-        level.ingraceperiod = 1;
-        foreach (player in level.players)
-        {
-            player.hasdonecombat = 0;
-        }
-        wait 0.05;
-    }
-}
-
 onPlayerConnect()
 {
     once = 1;
@@ -494,7 +330,6 @@ onPlayerConnect()
         level waittill("connected", player);
         if (once)
         {
-            level thread handleChangeClassAnytime();
             level.callbackplayerdamage_stub = level.callbackplayerdamage;
             level.callbackplayerdamage = ::codecallback_playerdamagedksas;
             once = 0;
@@ -1104,16 +939,18 @@ JoinUFO()
     {
         self iprintln("U.F.O is now ^2ON");
         self.__vars["ufo"] = 1;
-        self allowspectateteam("freelook", true);
+        self allowspectateteam("freelook", 1);
         self.sessionstate = "spectator";
         self setcontents(0);
-    }
-    else
-    {       
+        self iPrintLn("Press ^3[{+melee}] ^7to leave UFO");
+        while(!self meleeButtonPressed())
+        {
+            wait 0.05;
+        }
         self iprintln("U.F.O is now ^1OFF");
         self.__vars["ufo"] = 0;
         self.sessionstate = "playing";
-        self allowspectateteam("freelook", false);
+        self allowspectateteam("freelook", 0);
         self setcontents(100);
     }
 }
