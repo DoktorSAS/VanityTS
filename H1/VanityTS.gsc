@@ -1273,7 +1273,7 @@ inizializeBots()
         }
     }
 
-    if( bots == 0 && getDvar("g_gametype") == "dm")
+    if( bots == 0 && getDvar("g_gametype") == "sd")
     {
         spawn_bots(2, game["defenders"]);
     }
