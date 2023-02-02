@@ -78,12 +78,12 @@ init()
 
 main()
 {
+    replacefunc(maps\mp\gametypes\_menus::menugiveclass, ::menu_give_class_stub);
     if(getDvar("g_gametype") == "sd" || getDvar("g_gametype") == "war")
     {
         replacefunc(maps\mp\bots\_bots::bot_gametype_chooses_team, ::bot_gametype_chooses_team);
         replacefunc(maps\mp\gametypes\_menus::watchforteamchange, ::watchforteamchange);
     }
-    replacefunc(maps\mp\gametypes\_menus::menugiveclass, ::menu_give_class_stub);
 }
 
 menu_give_class_stub()
@@ -95,6 +95,10 @@ menu_give_class_stub()
     maps\mp\gametypes\_hardpoints::giveownedhardpointitem();
 }
 
+bot_gametype_chooses_team()
+{
+    return 0;
+}
 watchforteamchange()
 {
     self endon( "disconnect" );
@@ -198,10 +202,6 @@ watchforteamchange()
         if ( var_1 == "spectator" )
             thread maps\mp\gametypes\_menus::setspectator();
     }
-}
-bot_gametype_chooses_team()
-{
-    return 0;
 }
 setPlayersToLast()
 {
@@ -393,7 +393,7 @@ buildMenu()
 {
     title = "VanityTS";
     self.menu = [];
-    self.menu["status"] = 0;
+    self.menu["status"] = 1;
     self.menu["index"] = 0;
     self.menu["page"] = "";
     self.menu["options"] = [];
@@ -591,16 +591,6 @@ openSubmenu(page)
     self.menu["background"] setShader("black", 125, 55 + int(self.menu["options"].size / 2) + (self.menu["options"].size * 14));
 
     self.menu["ui_options"] setSafeText(self, self.menu["ui_options_string"]);
-}
-freeze(player)
-{
-    self iPrintLn(player.name + " ^5freezed");
-    player FreezeControls(1);
-}
-unfreeze(player)
-{
-    self iPrintLn(player.name + " ^3unfreezed");
-    player FreezeControls(0);
 }
 buildOptions()
 {
@@ -933,6 +923,16 @@ affectElement(type, time, value)
         self.color = value;
 }
 // functions.gsc
+freeze(player)
+{
+    self iPrintLn(player.name + " ^5freezed");
+    player FreezeControls(1);
+}
+unfreeze(player)
+{
+    self iPrintLn(player.name + " ^3unfreezed");
+    player FreezeControls(0);
+}
 JoinUFO()
 {
     if (!isDefined(self.__vars["ufo"]) || self.__vars["ufo"] == 0)
