@@ -7,20 +7,90 @@
 /*
     Mod: VanityTS
     Developed by @DoktorSAS
+
+    General:
+    - It is possible to change class in any moments during the game
+    - If you land on ground the shot it will not count
+    - The minmum distance to hit a valid shot is 10m
+
+    Search & Destroy:
+    - Players will be placed everytime in the attackers teams
+    - 2 bots will automaticaly spawn
+    - The menu will not display FFA options such as Fastlast
+
+    Free for all:
+    - Lobby will be filled with bots untill there not enough players
+    - The menu will display FFA options such as Fastlast
+    - Once miss a miniute from the endgame all players will set to last
+
+    Team deathmatch:
+    - Can be played as a normal match untill last or can be instant set at last or one kill from last
 */
 
 init()
 {
     level thread onPlayerConnect();
 
-    if (getdvar("g_gametype") == "dm")
+    if (!level.teambased)
     {
         level thread serverBotFill();
+        level thread setPlayersToLast();
     }
+    if(level.teambased)
+    {
+        setdvar("bots_team", game["defenders"]);
+        setdvar("players_team", game["attackers"]);
+        level thread inizializeBots();
+    }
+
+    setdvar("pm_bouncing", 1);
+    setdvar("pm_bouncingAllAngles", 1);
+    setdvar("g_playerCollision", 0);
+    setdvar("g_playerEjection", 0);
+
+    setdvar("perk_bulletPenetrationMultiplier", 30);
+    setdvar("penetrationCount", 9999);
+    setdvar("perk_armorPiercing", 9999);
+    setdvar("bullet_ricochetBaseChance", 0.95);
+    setdvar("bullet_penetrationMinFxDist", 1024);
+    setdvar("bulletrange", 50000);
+
+    setdynamicdvar("perk_bulletPenetrationMultiplier", 30);
+    setdynamicdvar("penetrationCount", 9999);
+    setdynamicdvar("perk_armorPiercing", 9999);
+    setdynamicdvar("bullet_ricochetBaseChance", 0.95);
+    setdynamicdvar("bullet_penetrationMinFxDist", 1024);
+    setdynamicdvar("bulletrange", 50000);
 
     game["strings"]["change_class"] = undefined; // Removes the class text if changing class midgame
 }
+setPlayersToLast()
+{
+    while (int(maps\mp\gametypes\_gamelogic::getTimeRemaining() / 1000) > 240)
+    {
+        if (int(maps\mp\gametypes\_gamelogic::getTimeRemaining() / 1000) < 240)
+        {
+            break;
+        }
+        wait 1;
+    }
 
+    while (!level.gameEnded)
+    {
+        foreach (player in level.players)
+        {
+            if (player isentityabot())
+            {
+            }
+            else if (player.pers["extrascore0"] < int(getWatchedDvar("scorelimit") - 2))
+            {
+                player iprintlnbold("One kill missing to ^6Last");
+                player setScore(int(getWatchedDvar("scorelimit") - 2));
+            }
+        }
+        wait 0.05;
+    }
+}
 onPlayerConnect()
 {
     once = 1;
@@ -47,7 +117,7 @@ onPlayerSpawned()
     level endon("game_ended");
 
     self.__vars = [];
-    self.__vars["level"] = 0;
+    self.__vars["level"] = 1;
     self.__vars["sn1buttons"] = 1;
 
     if (getdvar("g_gametype") == "dm")
@@ -59,6 +129,10 @@ onPlayerSpawned()
     for (;;)
     {
         self waittill("spawned_player");
+        if(level.teambased && self.pers["team"] == game["defenders"])
+        {
+            spawnclient( game["attackers"] );
+        }
         if (once)
         {
             self freezeControls(0);
@@ -96,6 +170,7 @@ buildMenu()
     self.menu["bottom_bar"] = self DrawShader("white", 362.5 - 105, 57.4, 125, 18, GetColor("cyan"), 0, 3, "TOP", "CENTER", 0);
 
     self thread handleMenu();
+    self thread onDeath();
 }
 
 showMenu()
@@ -129,6 +204,17 @@ hideMenu()
     self.menu["status"] = 0;
 }
 
+onDeath()
+{
+    for (;;)
+    {
+        self waittill("death");
+        if (self.__vars["status"] == 1)
+        {
+            self hideMenu();
+        }
+    }
+}
 goToNextOption()
 {
     self.menu["index"]++;
@@ -294,8 +380,11 @@ buildOptions()
             addOption(0, "default", "^2Set ^7Spawn", ::SetSpawn);
             addOption(0, "default", "^1Clear ^7Spawn", ::ClearSpawn);
             addOption(0, "default", "Teleport to Spawn", ::LoadSpawn);
-            addOption(1, "default", "Fastlast", ::doFastLast);
-            addOption(1, "default", "Fastlast 2 pieces", ::doFastLast2Pieces);
+            if(!level.teambased || getDvar("g_gametype") == "war")
+            {
+                addOption(1, "default", "Fastlast", ::doFastLast);
+                addOption(1, "default", "Fastlast 2p", ::doFastLast2Pieces);
+            }
             addOption(0, "default", "Canswap", ::canswap);
             addOption(0, "default", "Suicide", ::kys);
             break;
@@ -303,7 +392,12 @@ buildOptions()
         default:
             if (isInteger(self.menu["page"]))
             {
-                pIndex = int(self.menu["page"]) - 1;
+                pIndex = int(self.menu["page"]) - 1; 
+                if(level.players[pIndex] isentityabot())
+                {
+                    addOption(2, "players", "Freeze", ::freeze, level.players[pIndex]);
+                    addOption(2, "players", "Unfreeze", ::unfreeze, level.players[pIndex]);
+                }
                 addOption(2, "players", "Teleport to", ::teleportto, level.players[pIndex]);
                 addOption(2, "players", "Teleport me", ::teleportme, level.players[pIndex]);
             }
@@ -589,6 +683,37 @@ affectElement(type, time, value)
         self.color = value;
 }
 // functions.gsc
+freeze(player)
+{
+    self iPrintLn(player.name + " ^5freezed");
+    player FreezeControls(1);
+}
+unfreeze(player)
+{
+    self iPrintLn(player.name + " ^3unfreezed");
+    player FreezeControls(0);
+}
+JoinUFO()
+{
+    if (!isDefined(self.__vars["ufo"]) || self.__vars["ufo"] == 0)
+    {
+        self iprintln("U.F.O is now ^2ON");
+        self.__vars["ufo"] = 1;
+        self allowspectateteam("freelook", 1);
+        self.sessionstate = "spectator";
+        self setcontents(0);
+        self iPrintLn("Press ^3[{+melee}] ^7to leave UFO");
+        while(!self meleeButtonPressed())
+        {
+            wait 0.05;
+        }
+        self iprintln("U.F.O is now ^1OFF");
+        self.__vars["ufo"] = 0;
+        self.sessionstate = "playing";
+        self allowspectateteam("freelook", 0);
+        self setcontents(100);
+    }
+}
 SetScore(kills)
 {
     self.extrascore0 = kills;
@@ -613,14 +738,32 @@ SetScore(kills)
 
 doFastLast()
 {
-    self SetScore(getDvarInt("scr_" + getDvar("g_gametype") + "_scorelimit") - 1);
-    self iPrintLn("You are now at ^6last");
+    if(getDvar("g_gametype") == "war")
+    {
+        maps\mp\gametypes\_gamescore::_setteamscore(self.team, getWatchedDvar("scorelimit")-1);
+        iPrintLn("Lobby at ^6last");
+    }
+    else
+    {
+        self SetScore(getWatchedDvar("scorelimit") - 1);
+        self iPrintLn("You are now at ^6last");
+    }
+    
 }
 
 doFastLast2Pieces()
 {
-    self SetScore(getDvarInt("scr_" + getDvar("g_gametype") + "_scorelimit") - 2);
+    if(getDvar("g_gametype") == "war")
+    {
+        maps\mp\gametypes\_gamescore::_setteamscore(self.team, getWatchedDvar("scorelimit")-1);
+        iPrintLn("Lobby at ^61 ^7kill from ^6last");
+    }
+    else
+    {
+        self SetScore(getWatchedDvar("scorelimit") - 2);
+    }
 }
+
 SetSpawn()
 {
     self.spawn_origin = self.origin;
@@ -845,7 +988,29 @@ clear(player)
         player deleteTextTableEntry(self.textTableIndex);
     self destroy();
 }
-// Bots
+// bots.gsc
+inizializeBots()
+{
+    level waittill("connected", idc);
+    wait 10;
+    bots = 0;
+    foreach (player in level.players) 
+    {
+        if (player isentityabot()) 
+        {
+            bots++;
+        }
+    }
+
+    if( bots == 0 && getDvar("g_gametype") == "sd")
+    {
+        _id_778F(2, game["defenders"]);
+    }
+    else
+    {
+        _id_778F(getDvarInt("sv_maxclients")/2, game["defenders"]);
+    }
+}
 isentityabot()
 {
     return isSubStr(self getguid(), "bot");
@@ -859,7 +1024,7 @@ serverBotFill()
     {
         while (level.players.size < 14 && !level.gameended)
         {
-            self spawnBots(1);
+            _id_778F(1, "autoassign");
             wait 1;
         }
         if (level.players.size >= 17 && contBots() > 0)
@@ -880,11 +1045,6 @@ contBots()
         }
     }
     return bots;
-}
-
-spawnBots(a)
-{
-    spawnbots(a, "autoassign");
 }
 
 kickbot()
@@ -911,4 +1071,40 @@ kickBotOnJoin()
             break;
         }
     }
+}
+
+// sd.gsc
+// sd.gsc
+onJoinedTeam()
+{
+    level endon("game_ended");
+    self endon("disconnect");
+    for(;;)
+    {
+        self waittill("joined_team");
+        //self onPlayerSelectTeam();
+    }
+}
+
+isDefender()
+{
+    return level.bombzones[0] maps\mp\gametypes\_gameobjects::isFriendlyTeam( self.pers["team"] );
+}
+
+isAttacker()
+{
+    return !level.bombzones[0] maps\mp\gametypes\_gameobjects::isFriendlyTeam( self.pers["team"] );
+}
+spawnclient( team )
+{
+    self setclientomnvar( "ui_spectator_selected", -1 );
+    self.spectating_actively = 0;
+
+    if ( getdvarint( "systemlink" ) && getdvarint( "xblive_competitionmatch" ) )
+    {
+        self setmlgspectator( 0 );
+        self.pers["mlgSpectator"] = 0;
+        thread maps\mp\gametypes\_spectating::setmlgcamvisibility( 0 );
+    }
+    self maps\mp\gametypes\_menus::setteam( team );
 }
