@@ -367,7 +367,7 @@ onPlayerSpawned()
     for (;;)
     {
         self waittill("spawned_player");
-        if(level.teambed && self.pers["team"] == game["defenders"])
+        if(level.teambased && self.pers["team"] == game["defenders"])
         {
             spawnclient( game["attackers"] );
         }
