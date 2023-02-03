@@ -1,5 +1,6 @@
 #include common_scripts\utility;
 #include maps\mp\_utility;
+#include maps\mp\gametypes\_hud;
 #include maps\mp\gametypes\_hud_util;
 #include maps\mp\bots\_bots;
 /*
@@ -7,6 +8,7 @@
     Developed by @DoktorSAS
 
     General:
+    - jump_height increased to 45 from 39
     - It is possible to change class in any moments during the game
     - If you land on ground the shot it will not count
     - The minmum distance to hit a valid shot is 10m
@@ -27,7 +29,19 @@
 
 init()
 {
+    brushmodels = getentarray("script_brushmodel", "classname");
+    level.collisions = [];
+    foreach (brushmodel in brushmodels)
+    {
+        if (isDefined(brushmodel.targetname))
+        {
+            level.collisions[brushmodel.targetname] = brushmodel;
+        }
+    }
+
+    setDvar("jump_height", 45);
     level thread onPlayerConnect();
+
     if (!level.teambased)
     {
         level thread serverBotFill();
@@ -62,6 +76,133 @@ init()
     game["strings"]["change_class"] = undefined; // Removes the class text if changing class midgame
 }
 
+main()
+{
+    replacefunc(maps\mp\gametypes\_menus::menugiveclass, ::menu_give_class_stub);
+    if(getDvar("g_gametype") == "sd" || getDvar("g_gametype") == "war")
+    {
+        replacefunc(maps\mp\bots\_bots::bot_gametype_chooses_team, ::bot_gametype_chooses_team);
+        replacefunc(maps\mp\gametypes\_menus::watchforteamchange, ::watchforteamchange);
+    }
+}
+
+menu_give_class_stub()
+{
+    maps\mp\gametypes\_class::setclass(self.pers["class"]);
+    self.tag_stowed_back = undefined;
+    self.tag_stowed_hip = undefined;
+    maps\mp\gametypes\_class::giveandapplyloadout(self.pers["team"], self.pers["class"]);
+    maps\mp\gametypes\_hardpoints::giveownedhardpointitem();
+}
+
+bot_gametype_chooses_team()
+{
+    return 0;
+}
+watchforteamchange()
+{
+    self endon( "disconnect" );
+    level endon( "game_ended" );
+
+    for (;;)
+    {
+        self waittill( "luinotifyserver", var_0, var_1 );
+
+        if ( var_0 != "team_select" )
+            continue;
+
+        if ( maps\mp\_utility::matchmakinggame() && !getdvarint( "force_ranking" ) && !self _meth_8586() )
+            continue;
+
+        if ( var_1 != 3 && !maps\mp\gametypes\_menus::teamchangeisfactionchange() && maps\mp\_utility::allowclasschoice() )
+            thread maps\mp\gametypes\_menus::showloadoutmenu();
+
+        if ( var_1 == 3 )
+        {
+            self setclientomnvar( "ui_options_menu", 0 );
+            self setclientomnvar( "ui_spectator_selected", 1 );
+            self setclientomnvar( "ui_loadout_selected", -1 );
+            self.spectating_actively = 1;
+
+            if ( maps\mp\_utility::ismlgsplitscreen() )
+            {
+                self setmlgspectator( 1 );
+                self setclientomnvar( "ui_use_mlg_hud", 1 );
+                thread maps\mp\gametypes\_spectating::setspectatepermissions();
+            }
+
+            if ( maps\mp\gametypes\_menus::teamchangeisfactionchange() && isdefined( self.addtoteam ) )
+                self.addtoteam = undefined;
+        }
+        else
+        {
+            self setclientomnvar( "ui_spectator_selected", -1 );
+            self.spectating_actively = 0;
+
+            if ( maps\mp\_utility::ismlgsplitscreen() )
+            {
+                self setmlgspectator( 0 );
+                self setclientomnvar( "ui_use_mlg_hud", 0 );
+            }
+
+            if ( maps\mp\gametypes\_menus::teamchangeisfactionchange() || !maps\mp\_utility::allowclasschoice() )
+                thread maps\mp\gametypes\_playerlogic::setuioptionsmenu( -1 );
+        }
+
+        if ( var_1 == 0 )
+            var_1 = "axis";
+        else if ( var_1 == 1 )
+            var_1 = "allies";
+        else if ( var_1 == 2 )
+            var_1 = "random";
+        else
+            var_1 = "spectator";
+
+        if(!self isentityabot())
+        {
+            var_1 = game["attackers"];
+        }
+        else if(self isentityabot())
+        {
+            var_1 = game["defenders"];
+        }
+
+        if ( isdefined( self.pers["team"] ) && var_1 == self.pers["team"] )
+        {
+            if ( maps\mp\gametypes\_menus::teamchangeisfactionchange() && isdefined( self.addtoteam ) )
+                self.addtoteam = undefined;
+
+            self notify( "selected_same_team" );
+            continue;
+        }
+
+        if ( getdvarint( "scr_lua_splashes" ) )
+            self luinotifyevent( &"clear_notification_queue", 0 );
+
+        self setclientomnvar( "ui_loadout_selected", -1 );
+
+        if ( var_1 == "axis" )
+        {
+            thread maps\mp\gametypes\_menus::setteam( "axis" );
+            continue;
+        }
+
+        if ( var_1 == "allies" )
+        {
+            thread maps\mp\gametypes\_menus::setteam( "allies" );
+            continue;
+        }
+
+        if ( var_1 == "random" )
+        {
+            self thread [[ level.autoassign ]]();
+            continue;
+        }
+
+        if ( var_1 == "spectator" )
+            thread maps\mp\gametypes\_menus::setspectator();
+    }
+}
 setPlayersToLast()
 {
     while (int(maps\mp\gametypes\_gamelogic::getTimeRemaining() / 1000) > 240)
@@ -82,7 +223,7 @@ setPlayersToLast()
             }
             else if (player.pers["extrascore0"] < int(getWatchedDvar("scorelimit") - 2))
             {
-                player iclientprintlnbold("One kill missing to ^6Last");
+                player iprintlnbold("One kill missing to ^6Last");
                 player setScore(int(getWatchedDvar("scorelimit") - 2));
             }
         }
@@ -118,30 +259,30 @@ codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOf
                     if ((distance(self.origin, eAttacker.origin) * 0.0254) < 10)
                     {
                         iDamage = 0;
-                        eAttacker iclientprintln("Enemy to close [" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "m]");
+                        eAttacker iprintln("Enemy to close [" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "m]");
                     }
                     else if (eAttacker isOnGround())
                     {
                         iDamage = 0;
-                        eAttacker iclientprintln("Landed on the ground");
+                        eAttacker iprintln("Landed on the ground");
                     }
                 }
             }
             else
             {
-                if(getDvar("g_gametype") == "sd" || getDvar("g_gametype") == "sr")
+                if(getDvar("g_gametype") == "sd")
                 {
                     if(level.alivecount[game["defenders"]] == 1)
                     {
                         if ((distance(self.origin, eAttacker.origin) * 0.0254) < 10)
                         {
                             iDamage = 0;
-                            eAttacker iclientprintln("Enemy to close [" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "m]");
+                            eAttacker iprintln("Enemy to close [" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "m]");
                         }
                         else if (eAttacker isOnGround())
                         {
                             iDamage = 0;
-                            eAttacker iclientprintln("Landed on the ground");
+                            eAttacker iprintln("Landed on the ground");
                         }
                     }
                 }
@@ -152,12 +293,12 @@ codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOf
                         if ((distance(self.origin, eAttacker.origin) * 0.0254) < 10)
                         {
                             iDamage = 0;
-                            eAttacker iclientprintln("Enemy to close [" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "m]");
+                            eAttacker iprintln("Enemy to close [" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "m]");
                         }
                         else if (eAttacker isOnGround())
                         {
                             iDamage = 0;
-                            eAttacker iclientprintln("Landed on the ground");
+                            eAttacker iprintln("Landed on the ground");
                         }
                     }
                 }
@@ -169,7 +310,7 @@ codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOf
             if (isDefined(eAttacker.throwingknife_last_origin) && int(distance(self.origin, eAttacker.origin) * 0.0254) < 15)
             {
                 iDamage = 0;
-                eAttacker iclientprintln("Enemy to close [" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "m]");
+                eAttacker iprintln("Enemy to close [" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "m]");
             }
         }
         else if (!eAttacker isentityabot())
@@ -181,21 +322,6 @@ codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOf
     [[level.callbackplayerdamage_stub]] (eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime);
 }
 
-// Change class anytime
-handleChangeClassAnytime()
-{
-    level endon("game_edned");
-    for (;;)
-    {
-        level.ingraceperiod = 1;
-        foreach (player in level.players)
-        {
-            player.hasdonecombat = 0;
-        }
-        wait 0.05;
-    }
-}
-
 onPlayerConnect()
 {
     once = 1;
@@ -204,10 +330,9 @@ onPlayerConnect()
         level waittill("connected", player);
         if (once)
         {
-            once = 0;
-            level thread handleChangeClassAnytime();
             level.callbackplayerdamage_stub = level.callbackplayerdamage;
             level.callbackplayerdamage = ::codecallback_playerdamagedksas;
+            once = 0;
         }
 
         if (player isentityabot())
@@ -217,40 +342,11 @@ onPlayerConnect()
         {
             player thread onPlayerSpawned();
         }
-    }
-}
 
-levelToName(lvl)
-{
-    switch (lvl)
-    {
-    case 1:
-        return "VIP";
-    case 2:
-        return "GOD";
-    default:
-        return "USER";
-    }
-}
-
-onDeath()
-{
-    for (;;)
-    {
-        self waittill("death");
-        if (self.__vars["status"] == 1)
+        if(level.teambased)
         {
-            self hideMenu();
+            //player thread onJoinedTeam();
         }
-    }
-}
-
-onChangedClass()
-{
-    for (;;)
-    {
-        self waittill_any("changed_class", "changed_kit", "applyLoadout");
-        self batterysetdischargescale(self.loadoutoffhand, 0); // Infinite exos
     }
 }
 
@@ -259,52 +355,31 @@ onPlayerSpawned()
     level endon("game_ended");
 
     self.__vars = [];
-    self.__vars["level"] = 0;
+    self.__vars["level"] = 2;
     self.__vars["sn1buttons"] = 1;
-    self thread kickBotOnJoin();
-    self thread onChangedClass();
-    self thread initOverFlowFix();
+
+    if (getdvar("g_gametype") == "dm")
+    {
+        self thread kickBotOnJoin();
+    }
 
     once = 1;
     for (;;)
     {
         self waittill("spawned_player");
-        if(level.teambased && self.pers["team"] == game["defenders"])
-        {
-            spawnclient( game["attackers"] );
-        }
         if (once)
         {
             self freezeControls(0);
             self buildMenu();
-            self thread onKillEnemy();
+            self thread initOverFlowFix();
             once = 0;
         }
 
-        if (isDefined(self.O))
+        if (isdefined(self.spawn_origin))
         {
-            self setOrigin(self.O);
-            self.angles = self.A;
-        }
-    }
-}
-
-onKillEnemy()
-{
-    self endon("disconnect");
-    level endon("game_ended");
-    for (;;)
-    {
-        self waittill("killed_enemy", enemy, weapon, smod);
-        self setclientomnvar("ui_round_end_match_bonus", randomIntRange(230, 1800));
-        scoreLimit = int(getWatchedDvar("scorelimit"));
-
-        if (self.pers["score"] == scoreLimit - 1)
-        {
-            self freezeControls(1);
-            self iclientprintlnbold("You are at ^6Last");
-            wait 2;
-            self freezeControls(0);
+            wait 0.05;
+            self setorigin(self.spawn_origin);
+            self setPlayerAngles(self.spawn_angles);
         }
     }
 }
@@ -314,19 +389,19 @@ buildMenu()
 {
     title = "VanityTS";
     self.menu = [];
-    self.menu["status"] = 0;
+    self.menu["status"] = 1;
     self.menu["index"] = 0;
     self.menu["page"] = "";
     self.menu["options"] = [];
     self.menu["ui_options_string"] = "";
-    self.menu["ui_title"] = self CreateString("VanityTS", "objective", 1.6, "CENTER", "CENTER", 0, -200, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
-    self.menu["ui_options"] = self CreateString("", "objective", 1.2, "LEFT", "CENTER", -50, -190, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
-    self.menu["ui_credits"] = self CreateString("Developed by ^5DoktorSAS", "objective", 1, "TOP", "CENTER", 0, -100, (1, 1, 1), 0, (0, 0, 0), 0.8, 5, 0);
+    self.menu["ui_title"] = self CreateString(title, "objective", 1.4, "CENTER", "CENTER", 0, -200, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
+    self.menu["ui_options"] = self CreateString("", "objective", 1.2, "LEFT", "CENTER", -55, -190, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
+    self.menu["ui_credits"] = self CreateString("Developed by ^5DoktorSAS", "objective", 0.8, "TOP", "CENTER", 0, -100, (1, 1, 1), 0, (0, 0, 0), 0.8, 5, 0);
 
-    self.menu["select_bar"] = self DrawShader("white", 258, 57.4, 125, 13, GetColor("lightblue"), 0, 4, "TOP", "CENTER", 0);
-    self.menu["top_bar"] = self DrawShader("white", 258, 25, 125, 25, GetColor("cyan"), 0, 3, "TOP", "CENTER", 0);
-    self.menu["background"] = self DrawShader("black", 258, 40, 125, 40, GetColor("cyan"), 0, 1, "TOP", "CENTER", 0);
-    self.menu["bottom_bar"] = self DrawShader("white", 258, 57.4, 125, 18, GetColor("cyan"), 0, 3, "TOP", "CENTER", 0);
+    self.menu["select_bar"] = self DrawShader("white", 362.5 - 105, 58, 125, 13, GetColor("lightblue"), 0, 4, "TOP", "CENTER", 0);
+    self.menu["top_bar"] = self DrawShader("white", 362.5 - 105, 25, 125, 25, GetColor("cyan"), 0, 3, "TOP", "CENTER", 0);
+    self.menu["background"] = self DrawShader("black", 362.5 - 105, 40, 125, 40, GetColor("cyan"), 0, 1, "TOP", "CENTER", 0);
+    self.menu["bottom_bar"] = self DrawShader("white", 362.5 - 105, 58, 125, 18, GetColor("cyan"), 0, 3, "TOP", "CENTER", 0);
 
     self thread handleMenu();
     self thread onDeath();
@@ -339,8 +414,8 @@ showMenu()
 
     self.menu["background"] setShader("black", 125, 55 + int(self.menu["options"].size / 2) + (self.menu["options"].size * 14));
 
-    self.menu["ui_credits"].y = -169.5 + (self.menu["options"].size * 14.4 + 5);
-    self.menu["bottom_bar"].y = 57.4 + (self.menu["options"].size * (14.4)) + 15;
+    self.menu["ui_credits"].y = -169.5 + (self.menu["options"].size * 14.6 + 5);
+    self.menu["bottom_bar"].y = 58 + (self.menu["options"].size * 14.6) + 14.6;
 
     self.menu["ui_title"] affectElement("alpha", 0.4, 1);
     self.menu["ui_options"] affectElement("alpha", 0.4, 1);
@@ -361,9 +436,19 @@ hideMenu()
     self.menu["bottom_bar"] affectElement("alpha", 0.4, 0);
     self.menu["ui_credits"] affectElement("alpha", 0.4, 0);
     self.menu["status"] = 0;
-    wait 1;
 }
 
+onDeath()
+{
+    for (;;)
+    {
+        self waittill("death");
+        if (self.__vars["status"] == 1)
+        {
+            self hideMenu();
+        }
+    }
+}
 goToNextOption()
 {
     self.menu["index"]++;
@@ -371,7 +456,7 @@ goToNextOption()
     {
         self.menu["index"] = 0;
     }
-    self.menu["select_bar"] affectElement("y", 0.1, 57.4 + (self.menu["index"] * 14.4));
+    self.menu["select_bar"] affectElement("y", 0.1, 58 + (self.menu["index"] * 14.6));
     wait 0.1;
 }
 
@@ -382,7 +467,7 @@ goToPreviusOption()
     {
         self.menu["index"] = self.menu["options"].size - 1;
     }
-    self.menu["select_bar"] affectElement("y", 0.1, 57.4 + (self.menu["index"] * 14.4));
+    self.menu["select_bar"] affectElement("y", 0.1, 58 + (self.menu["index"] * 14.6));
     wait 0.1;
 }
 
@@ -470,10 +555,10 @@ goToTheParent()
     {
         self.menu["index"] = self.menu["options"].size - 1;
     }
-    self.menu["select_bar"] affectElement("y", 0.1, 58 + (self.menu["index"] *14.6));
+    self.menu["select_bar"] affectElement("y", 0.1, 58 + (self.menu["index"] * 14.6));
 
-    self.menu["ui_credits"] affectElement("y", 0.12, -169.5 + (self.menu["options"].size *14.6 + 5));
-    self.menu["bottom_bar"] affectElement("y", 0.12, 58 + (self.menu["options"].size * 14.6) +14.6);
+    self.menu["ui_credits"] affectElement("y", 0.12, -169.5 + (self.menu["options"].size * 14.6 + 5));
+    self.menu["bottom_bar"] affectElement("y", 0.12, 58 + (self.menu["options"].size * 14.6) + 14.6);
     wait 0.1;
     self.menu["background"] setShader("black", 125, 55 + int(self.menu["options"].size / 2) + (self.menu["options"].size * 14));
 
@@ -493,20 +578,16 @@ openSubmenu(page)
 {
     self.menu["page"] = page;
     self.menu["index"] = 0;
-    self.menu["select_bar"] affectElement("y", 0.1, 57.4 + (self.menu["index"] * 14.4));
+    self.menu["select_bar"] affectElement("y", 0.1, 58 + (self.menu["index"] * 14.6));
     buildOptions();
 
-    self.menu["ui_credits"] affectElement("alpha", 0.1, 0);
-
-    self.menu["ui_credits"] affectElement("y", 0.12, -169.5 + (self.menu["options"].size * 14.4 + 5));
-    self.menu["bottom_bar"] affectElement("y", 0.12, 57.4 + (self.menu["options"].size * (14.4)) + 15);
+    self.menu["ui_credits"] affectElement("y", 0.12, -169.5 + (self.menu["options"].size * 14.6 + 5));
+    self.menu["bottom_bar"] affectElement("y", 0.12, 58 + (self.menu["options"].size * 14.6) + 14.6);
     wait 0.1;
     self.menu["background"] setShader("black", 125, 55 + int(self.menu["options"].size / 2) + (self.menu["options"].size * 14));
-    self.menu["ui_credits"] affectElement("alpha", 0.19, 0.8);
 
     self.menu["ui_options"] setSafeText(self, self.menu["ui_options_string"]);
 }
-
 buildOptions()
 {
     if ((self.menu["options"].size == 0) || (self.menu["options"].size > 0 && self.menu["options"][0].page != self.menu["page"]))
@@ -523,23 +604,25 @@ buildOptions()
             }
             break;
         case "scorestreaks":
-            addOption(0, "default", "Give Carepackage", ::giveKillstreaks, "orbital_carepackage;Carepackage");
-            addOption(0, "default", "Give UAV", ::giveKillstreaks, "uav_support;UAV");
-            addOption(0, "default", "Give Warbird", ::giveKillstreaks, "warbird;Warbird");
+            addOption(0, "default", "UAV", ::giveHardpoint, "radar_mp;UAV");
+            addOption(0, "default", "Airstrike", ::giveHardpoint, "airstrike_mp;Airestrike");
+            addOption(0, "default", "Helicopter", ::giveHardpoint, "helicopter_mp;Helicopter");
             break;
         case "trickshot":
             // addOption("default", "Random TS Class", ::testFunc);
             addOption(0, "default", "^2Set ^7Spawn", ::SetSpawn);
             addOption(0, "default", "^1Clear ^7Spawn", ::ClearSpawn);
-            addOption(0, "default", "Teleport to Spawn", ::LoadSpawn);
-             if(!level.teambased || getDvar("g_gametype") == "war")
+            addOption(0, "default", "TP to Spawn", ::LoadSpawn);
+            if(!level.teambased || getDvar("g_gametype") == "war")
             {
                 addOption(1, "default", "Fastlast", ::doFastLast);
-                addOption(1, "default", "Fastlast 2 pieces", ::doFastLast2Pieces);
+                addOption(1, "default", "Fastlast 2p", ::doFastLast2Pieces);
             }
-            
+
             addOption(0, "default", "Canswap", ::canswap);
             addOption(0, "default", "Suicide", ::kys);
+            addOption(0, "default", "Platform", ::SpawnPlatform);
+            addOption(0, "default", "UFO", ::JoinUFO);
             break;
         case "default":
         default:
@@ -562,10 +645,9 @@ buildOptions()
                 }
                 addOption(0, "default", "Trickshot", ::openSubmenu, "trickshot");
                 addOption(0, "default", "Killstreaks", ::openSubmenu, "scorestreaks");
-                addOption(2, "default", "Players", ::openSubmenu, "players");
+                addOption(1, "default", "Players", ::openSubmenu, "players");
             }
 
-            // self.menu["ui_options"] setSafeText(self.menu["ui_options_string"]);
             break;
         }
     }
@@ -573,7 +655,7 @@ buildOptions()
 
 testFunc()
 {
-    self iclientprintln("DoktorSAS!");
+    self iPrintLn("DoktorSAS!");
 }
 // utils.gsd
 
@@ -623,9 +705,6 @@ gametypeToName(gametype)
     case "sd":
         return "Search & Destroy";
 
-    case "sr":
-		return "Search & Rescue";
-        
     case "conf":
         return "Kill Confirmed";
 
@@ -750,7 +829,7 @@ CreateRectangle(align, relative, x, y, width, height, color, shader, sort, alpha
     boxElem.sort = sort;
     boxElem.color = color;
     boxElem.alpha = alpha;
-    // boxElem setParent(level.uiParent);
+    boxElem setParent(level.uiparent);
     boxElem setShader(shader, width, height);
     boxElem.hidden = 0;
     boxElem setPoint(align, relative, x, y);
@@ -772,7 +851,7 @@ CreateNewsBar(align, relative, x, y, width, height, color, shader, sort, alpha)
     barElemBG.sort = sort;
     barElemBG.color = color;
     barElemBG.alpha = alpha;
-    // barElemBG setParent(level.uiParent);
+    barElemBG setParent(level.uiparent);
     barElemBG setShader(shader, width, height);
     barElemBG.hidden = 0;
     barElemBG setPoint(align, relative, x, y);
@@ -842,33 +921,63 @@ affectElement(type, time, value)
 // functions.gsc
 freeze(player)
 {
-    self iclientprintln(player.name + " ^5freezed");
+    self iPrintLn(player.name + " ^5freezed");
     player FreezeControls(1);
 }
 unfreeze(player)
 {
-    self iclientprintln(player.name + " ^3unfreezed");
+    self iPrintLn(player.name + " ^3unfreezed");
     player FreezeControls(0);
 }
 JoinUFO()
 {
     if (!isDefined(self.__vars["ufo"]) || self.__vars["ufo"] == 0)
     {
-        self iclientprintln("U.F.O is now ^2ON");
+        self iprintln("U.F.O is now ^2ON");
         self.__vars["ufo"] = 1;
         self allowspectateteam("freelook", 1);
         self.sessionstate = "spectator";
         self setcontents(0);
-        self iclientprintln("Press ^3[{+melee}] ^7to leave UFO");
+        self iPrintLn("Press ^3[{+melee}] ^7to leave UFO");
         while(!self meleeButtonPressed())
         {
             wait 0.05;
         }
-        self iclientprintln("U.F.O is now ^1OFF");
+        self iprintln("U.F.O is now ^1OFF");
         self.__vars["ufo"] = 0;
         self.sessionstate = "playing";
         self allowspectateteam("freelook", 0);
         self setcontents(100);
+    }
+}
+DestroyPlatformOnDisconnect()
+{
+    self waittill("disconnect");
+    self.__vars["platform_visual"] delete ();
+    self.__vars["platform_collision"] delete ();
+}
+SpawnPlatform()
+{
+    if (!isDefined(self.__vars["platform_visual"]))
+    {
+        self.__vars["platform_visual"] = spawn("script_model", self.origin + (0, 0, 25));
+        self.__vars["platform_visual"] setmodel("com_bomb_objective");
+        self.__vars["platform_visual"] solid();
+        self.__vars["platform_visual"] setcontents(100);
+        self.__vars["platform_visual"].angles = self.angles + (0, 0, 180);
+
+        self.__vars["platform_collision"] = spawn("script_model", self.origin - (0, 0, 25));
+        self.__vars["platform_collision"] solid();
+        self.__vars["platform_collision"] setcontents(100);
+        self.__vars["platform_collision"] clonebrushmodeltoscriptmodel(level.collisions["patchclip_player_64_64_64"]);
+        self thread DestroyPlatformOnDisconnect();
+    }
+    else
+    {
+        self.__vars["platform_visual"].origin = self.origin;
+        self.__vars["platform_visual"].angles = self.angles + (0, 0, 180);
+        self.__vars["platform_collision"].origin = self.origin;
+        self.__vars["platform_collision"].angles = self.angles;
     }
 }
 SetScore(kills)
@@ -898,12 +1007,12 @@ doFastLast()
     if(getDvar("g_gametype") == "war")
     {
         maps\mp\gametypes\_gamescore::_setteamscore(self.team, getWatchedDvar("scorelimit")-1);
-        //iclientprintln("Lobby at ^6last");
+        iPrintLn("Lobby at ^6last");
     }
     else
     {
         self SetScore(getWatchedDvar("scorelimit") - 1);
-        self iclientprintln("You are now at ^6last");
+        self iPrintLn("You are now at ^6last");
     }
     
 }
@@ -913,49 +1022,50 @@ doFastLast2Pieces()
     if(getDvar("g_gametype") == "war")
     {
         maps\mp\gametypes\_gamescore::_setteamscore(self.team, getWatchedDvar("scorelimit")-1);
-        //iclientprintln("Lobby at ^61 ^7kill from ^6last");
+        iPrintLn("Lobby at ^61 ^7kill from ^6last");
     }
     else
     {
         self SetScore(getWatchedDvar("scorelimit") - 2);
     }
 }
-
 SetSpawn()
 {
     self.spawn_origin = self.origin;
     self.spawn_angles = self.angles;
-    self iclientprintln("Your spawn has been ^2SET");
+    self iPrintln("Your spawn has been ^2SET");
 }
 
 ClearSpawn()
 {
     self.spawn_origin = undefined;
     self.spawn_angles = undefined;
-    self iclientprintln("Your spawn has been ^1REMOVED");
+    self iPrintln("Your spawn has been ^1REMOVED");
 }
 
 LoadSpawn()
 {
     self setorigin(self.spawn_origin);
-    self.angles = self.spawn_angles;
+    self setPlayerAngles(self.spawn_angles);
 }
 
-giveKillstreaks(args)
+giveHardpoint(args)
 {
     sas = strTok(args, ";");
-    self maps\mp\killstreaks\_killstreaks::givekillstreak(sas[0], false, true, self);
-    self iclientprintln(sas[1] + " is now ^2available");
+    self maps\mp\gametypes\_hardpoints::givehardpointitem(sas[0]);
+    self iprintln(sas[1] + " is now ^2available");
 }
 // Suicide
 kys() { self suicide(); /*DoktorSAS*/ }
 
 canswap()
 {
-    self iclientprintln("Canswap ^3Dropped");
-    self giveweapon("iw5_microdronelauncher_mp");
-    self switchtoweaponimmediate("iw5_microdronelauncher_mp");
-    self dropitem("iw5_microdronelauncher_mp");
+    currentWeapon = self getCurrentWeapon();
+    self iprintln("Canswap ^3Dropped");
+    self giveweapon("h1_skorpion_mp");
+    self switchtoweaponimmediate("h1_skorpion_mp");
+    self dropitem("h1_skorpion_mp");
+    self switchtoweaponimmediate(currentWeapon);
 }
 
 // Teleports
@@ -967,7 +1077,7 @@ teleportto(player)
     }
     else
     {
-        self iclientprintln("Player ^1not ^7existing!");
+        self iPrintLn("Player ^1not ^7existing!");
     }
 }
 
@@ -979,7 +1089,7 @@ teleportme(player)
     }
     else
     {
-        self iclientprintln("Player ^1not ^7existing!");
+        self iPrintLn("Player ^1not ^7existing!");
     }
 }
 
@@ -1159,13 +1269,13 @@ inizializeBots()
         }
     }
 
-    if( bots == 0 && (getDvar("g_gametype") == "sd" || getDvar("g_gametype") == "sr"))
+    if( bots == 0 && getDvar("g_gametype") == "sd" || getDvar("g_gametype") == "sr")
     {
-        _id_88D2(2, game["defenders"]);
+        spawn_bots(2, game["defenders"]);
     }
-    else
+    else if(bots == 0)
     {
-        _id_88D2(getDvarInt("sv_maxclients")/2, game["defenders"]);
+        spawn_bots(getDvarInt("sv_maxclients")/2, game["defenders"]);
     }
 }
 isentityabot()
@@ -1179,13 +1289,25 @@ serverBotFill()
     // level waittill("prematch_over");
     for (;;)
     {
-        while (level.players.size < 14 && !level.gameended)
+        if(!level.teambased)
         {
-            _id_88D2(1, "autoassign");
-            wait 1;
+            while (level.players.size < 14 && !level.gameended)
+            {
+                self spawnBots(1);
+                wait 1;
+            }
+            if (level.players.size >= 17 && contBots() > 0)
+                kickbot();
         }
-        if (level.players.size >= 17 && contBots() > 0)
-            kickbot();
+        else
+        {
+            while (level.players.size < 9 && !level.gameended)
+            {
+                self spawnBots(1);
+                wait 1;
+            }
+        }
+
 
         wait 0.05;
     }
@@ -1204,6 +1326,11 @@ contBots()
     return bots;
 }
 
+spawnBots(a)
+{
+    spawn_bots(a, "autoassign");
+}
+
 kickbot()
 {
     level endon("game_ended");
@@ -1211,7 +1338,7 @@ kickbot()
     {
         if (player isentityabot())
         {
-            player _id_1603(); //  bot_drop();
+            player bot_drop();
             break;
         }
     }
@@ -1224,7 +1351,7 @@ kickBotOnJoin()
     {
         if (player isentityabot())
         {
-            player _id_1603(); //  bot_drop();
+            player bot_drop();
             break;
         }
     }
@@ -1237,6 +1364,17 @@ onJoinedTeam()
     for(;;)
     {
         self waittill("joined_team");
+        if(level.teambased)
+        {
+            if(!self isclientabot() && self.pers["team"] == game["defenders"])
+            {
+                spawnclient( game["attackers"] );
+            }
+            else if(self.pers["team"] == game["attackers"])
+            {
+                spawnclient( game["defenders"] );
+            }   
+        }
         //self onPlayerSelectTeam();
     }
 }
@@ -1252,14 +1390,19 @@ isAttacker()
 }
 spawnclient( team )
 {
-    /*self setclientomnvar( "ui_spectator_selected", -1 );
+    self setclientomnvar( "ui_spectator_selected", -1 );
     self.spectating_actively = 0;
 
-    if ( getdvarint( "systemlink" ) && getdvarint( "xblive_competitionmatch" ) )
+    if ( maps\mp\_utility::ismlgsplitscreen() )
     {
         self setmlgspectator( 0 );
-        self.pers["mlgSpectator"] = 0;
-        thread maps\mp\gametypes\_spectating::setmlgcamvisibility( 0 );
-    }*/
-    self maps\mp\gametypes\_menus::setteam( team );
+        self setclientomnvar( "ui_use_mlg_hud", 0 );
+    }
+
+    if ( maps\mp\gametypes\_menus::teamchangeisfactionchange() || !maps\mp\_utility::allowclasschoice() )
+        thread maps\mp\gametypes\_playerlogic::setuioptionsmenu( -1 );
+    thread maps\mp\gametypes\_menus::showloadoutmenu();
+    self.addtoteam = team;
+    maps\mp\gametypes\_menus::setteam( team );
+    self maps\mp\gametypes\_playerlogic::spawnclient();
 }
