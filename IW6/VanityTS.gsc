@@ -1074,7 +1074,6 @@ kickBotOnJoin()
 }
 
 // sd.gsc
-// sd.gsc
 onJoinedTeam()
 {
     level endon("game_ended");
