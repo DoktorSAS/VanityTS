@@ -887,7 +887,7 @@ SetScore(kills)
 
 doFastLast()
 {
-	if (getDvar("g_gametype") == "war")
+	if (getDvar("g_gametype") == "tdm")
 	{
 		[[level._setteamscore]] (self.team, level.scorelimit - 1);
 		foreach (player in level.players)
@@ -904,7 +904,7 @@ doFastLast()
 
 doFastLast2Pieces()
 {
-	if (getDvar("g_gametype") == "war")
+	if (getDvar("g_gametype") == "tdm")
 	{
 		[[level._setteamscore]] (self.team, level.scorelimit - 2);
 		foreach (player in level.players)
