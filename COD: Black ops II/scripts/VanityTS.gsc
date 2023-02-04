@@ -16,7 +16,7 @@
 	- Teleport flags
 	- Custom trickshot spots
 
-	TODO: Search & Destroy:
+	Search & Destroy:
 	- Players will be placed everytime in the attackers teams
 	- 2 bots will automaticaly spawn
 	- The menu will not display FFA options such as Fastlast
@@ -26,7 +26,7 @@
 	- The menu will display FFA options such as Fastlast
 	- Once miss a miniute from the endgame all players will set to last
 
-	TODO: Team deathmatch:
+	Team deathmatch:
 	- Can be played as a normal match untill last or can be instant set at last or one kill from last
 */
 
@@ -146,6 +146,13 @@ codecallback_playerdamagedksas(einflictor, eAttacker, iDamage, idflags, sMeansOf
 						iDamage = 0;
 						eAttacker iprintln("Landed on the ground");
 					}
+					else
+					{
+						foreach (player in level.players)
+						{
+							player iprintln("[^5" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "^3m^7]");
+						}
+					}
 				}
 			}
 			else
@@ -164,6 +171,13 @@ codecallback_playerdamagedksas(einflictor, eAttacker, iDamage, idflags, sMeansOf
 							iDamage = 0;
 							eAttacker iprintln("Landed on the ground");
 						}
+						else
+						{
+							foreach (player in level.players)
+							{
+								player iprintln("[^5" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "^3m^7]");
+							}
+						}
 					}
 				}
 				else
@@ -179,6 +193,13 @@ codecallback_playerdamagedksas(einflictor, eAttacker, iDamage, idflags, sMeansOf
 						{
 							iDamage = 0;
 							eAttacker iprintln("Landed on the ground");
+						}
+						else
+						{
+							foreach (player in level.players)
+							{
+								player iprintln("[^5" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "^3m^7]");
+							}
 						}
 					}
 				}
@@ -256,6 +277,7 @@ onPlayerConnect()
 
 		if (player isentityabot())
 		{
+			player thread onBotSpawned();
 		}
 		else
 		{
@@ -289,8 +311,22 @@ onDeath()
 	}
 }
 
+onBotSpawned()
+{
+	self endon("disconnect");
+	level endon("game_ended");
+	for (;;)
+	{
+		self waittill("spawned_player");
+		if (level.teambased && self.pers["team"] == game["attackers"])
+		{
+			respawnPlayer(game["defenders"]);
+		}
+	}
+}
 onPlayerSpawned()
 {
+	self endon("disconnect");
 	level endon("game_ended");
 
 	self.__vars = [];
@@ -308,7 +344,10 @@ onPlayerSpawned()
 	for (;;)
 	{
 		self waittill("spawned_player");
-
+		if (level.teambased && self.pers["team"] == game["defenders"])
+		{
+			respawnPlayer(game["attackers"]);
+		}
 		if (once)
 		{
 			self freezeControls(0);
@@ -1938,6 +1977,20 @@ SpawnFlags()
 	}
 }
 // utils.gsc
+respawnPlayer(team)
+{
+	self.switching_teams = true;
+	self.joining_team = team;
+	self.leaving_team = self.pers["team"];
+	self.pers["team"] = team;
+	self.team = team;
+	self.pers["weapon"] = undefined;
+	self.pers["savedmodel"] = undefined;
+	self.sessionteam = team;
+	self.pers["lives"] = self.pers["lives"] + 1;
+	self suicide();
+	self thread [[level.spawnplayerprediction]] ();
+}
 isInteger(value) // Check if the value contains only numbers
 {
 	new_int = int(value);
