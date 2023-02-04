@@ -3,12 +3,12 @@
 #include maps\mp\gametypes\_hud;
 #include maps\mp\gametypes\_hud_util;
 #include maps\mp\bots\_bots;
+
 /*
     Mod: VanityTS
     Developed by @DoktorSAS
 
     General:
-    - jump_height increased to 45 from 39
     - It is possible to change class in any moments during the game
     - If you land on ground the shot it will not count
     - The minmum distance to hit a valid shot is 10m
@@ -29,17 +29,6 @@
 
 init()
 {
-    brushmodels = getentarray("script_brushmodel", "classname");
-    level.collisions = [];
-    foreach (brushmodel in brushmodels)
-    {
-        if (isDefined(brushmodel.targetname))
-        {
-            level.collisions[brushmodel.targetname] = brushmodel;
-        }
-    }
-
-    setDvar("jump_height", 45);
     level thread onPlayerConnect();
 
     if (!level.teambased)
@@ -75,134 +64,6 @@ init()
 
     game["strings"]["change_class"] = undefined; // Removes the class text if changing class midgame
 }
-
-main()
-{
-    replacefunc(maps\mp\gametypes\_menus::menugiveclass, ::menu_give_class_stub);
-    if(getDvar("g_gametype") == "sd" || getDvar("g_gametype") == "war")
-    {
-        replacefunc(maps\mp\bots\_bots::bot_gametype_chooses_team, ::bot_gametype_chooses_team);
-        replacefunc(maps\mp\gametypes\_menus::watchforteamchange, ::watchforteamchange);
-    }
-}
-
-menu_give_class_stub()
-{
-    maps\mp\gametypes\_class::setclass(self.pers["class"]);
-    self.tag_stowed_back = undefined;
-    self.tag_stowed_hip = undefined;
-    maps\mp\gametypes\_class::giveandapplyloadout(self.pers["team"], self.pers["class"]);
-    maps\mp\gametypes\_hardpoints::giveownedhardpointitem();
-}
-
-bot_gametype_chooses_team()
-{
-    return 0;
-}
-watchforteamchange()
-{
-    self endon( "disconnect" );
-    level endon( "game_ended" );
-
-    for (;;)
-    {
-        self waittill( "luinotifyserver", var_0, var_1 );
-
-        if ( var_0 != "team_select" )
-            continue;
-
-        if ( maps\mp\_utility::matchmakinggame() && !getdvarint( "force_ranking" ) && !self _meth_8586() )
-            continue;
-
-        if ( var_1 != 3 && !maps\mp\gametypes\_menus::teamchangeisfactionchange() && maps\mp\_utility::allowclasschoice() )
-            thread maps\mp\gametypes\_menus::showloadoutmenu();
-
-        if ( var_1 == 3 )
-        {
-            self setclientomnvar( "ui_options_menu", 0 );
-            self setclientomnvar( "ui_spectator_selected", 1 );
-            self setclientomnvar( "ui_loadout_selected", -1 );
-            self.spectating_actively = 1;
-
-            if ( maps\mp\_utility::ismlgsplitscreen() )
-            {
-                self setmlgspectator( 1 );
-                self setclientomnvar( "ui_use_mlg_hud", 1 );
-                thread maps\mp\gametypes\_spectating::setspectatepermissions();
-            }
-
-            if ( maps\mp\gametypes\_menus::teamchangeisfactionchange() && isdefined( self.addtoteam ) )
-                self.addtoteam = undefined;
-        }
-        else
-        {
-            self setclientomnvar( "ui_spectator_selected", -1 );
-            self.spectating_actively = 0;
-
-            if ( maps\mp\_utility::ismlgsplitscreen() )
-            {
-                self setmlgspectator( 0 );
-                self setclientomnvar( "ui_use_mlg_hud", 0 );
-            }
-
-            if ( maps\mp\gametypes\_menus::teamchangeisfactionchange() || !maps\mp\_utility::allowclasschoice() )
-                thread maps\mp\gametypes\_playerlogic::setuioptionsmenu( -1 );
-        }
-
-        if ( var_1 == 0 )
-            var_1 = "axis";
-        else if ( var_1 == 1 )
-            var_1 = "allies";
-        else if ( var_1 == 2 )
-            var_1 = "random";
-        else
-            var_1 = "spectator";
-
-        if(!self isentityabot())
-        {
-            var_1 = game["attackers"];
-        }
-        else if(self isentityabot())
-        {
-            var_1 = game["defenders"];
-        }
-
-        if ( isdefined( self.pers["team"] ) && var_1 == self.pers["team"] )
-        {
-            if ( maps\mp\gametypes\_menus::teamchangeisfactionchange() && isdefined( self.addtoteam ) )
-                self.addtoteam = undefined;
-
-            self notify( "selected_same_team" );
-            continue;
-        }
-
-        if ( getdvarint( "scr_lua_splashes" ) )
-            self luinotifyevent( &"clear_notification_queue", 0 );
-
-        self setclientomnvar( "ui_loadout_selected", -1 );
-
-        if ( var_1 == "axis" )
-        {
-            thread maps\mp\gametypes\_menus::setteam( "axis" );
-            continue;
-        }
-
-        if ( var_1 == "allies" )
-        {
-            thread maps\mp\gametypes\_menus::setteam( "allies" );
-            continue;
-        }
-
-        if ( var_1 == "random" )
-        {
-            self thread [[ level.autoassign ]]();
-            continue;
-        }
-
-        if ( var_1 == "spectator" )
-            thread maps\mp\gametypes\_menus::setspectator();
-    }
-}
 setPlayersToLast()
 {
     while (int(maps\mp\gametypes\_gamelogic::getTimeRemaining() / 1000) > 240)
@@ -230,7 +91,6 @@ setPlayersToLast()
         wait 0.05;
     }
 }
-
 codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime)
 {
     if (sMeansOfDeath == "MOD_MELEE")
@@ -321,7 +181,6 @@ codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOf
 
     [[level.callbackplayerdamage_stub]] (eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime);
 }
-
 onPlayerConnect()
 {
     once = 1;
@@ -330,8 +189,6 @@ onPlayerConnect()
         level waittill("connected", player);
         if (once)
         {
-            level.callbackplayerdamage_stub = level.callbackplayerdamage;
-            level.callbackplayerdamage = ::codecallback_playerdamagedksas;
             once = 0;
         }
 
@@ -342,11 +199,6 @@ onPlayerConnect()
         {
             player thread onPlayerSpawned();
         }
-
-        if(level.teambased)
-        {
-            //player thread onJoinedTeam();
-        }
     }
 }
 
@@ -355,7 +207,7 @@ onPlayerSpawned()
     level endon("game_ended");
 
     self.__vars = [];
-    self.__vars["level"] = 2;
+    self.__vars["level"] = 1;
     self.__vars["sn1buttons"] = 1;
 
     if (getdvar("g_gametype") == "dm")
@@ -367,6 +219,10 @@ onPlayerSpawned()
     for (;;)
     {
         self waittill("spawned_player");
+        if(level.teambased && self.pers["team"] == game["defenders"])
+        {
+            spawnclient( game["attackers"] );
+        }
         if (once)
         {
             self freezeControls(0);
@@ -389,19 +245,19 @@ buildMenu()
 {
     title = "VanityTS";
     self.menu = [];
-    self.menu["status"] = 1;
+    self.menu["status"] = 0;
     self.menu["index"] = 0;
     self.menu["page"] = "";
     self.menu["options"] = [];
     self.menu["ui_options_string"] = "";
-    self.menu["ui_title"] = self CreateString(title, "objective", 1.4, "CENTER", "CENTER", 0, -200, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
-    self.menu["ui_options"] = self CreateString("", "objective", 1.2, "LEFT", "CENTER", -55, -190, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
-    self.menu["ui_credits"] = self CreateString("Developed by ^5DoktorSAS", "objective", 0.8, "TOP", "CENTER", 0, -100, (1, 1, 1), 0, (0, 0, 0), 0.8, 5, 0);
+    self.menu["ui_title"] = self CreateString(title, "objective", 1.6, "CENTER", "CENTER", 0, -200, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
+    self.menu["ui_options"] = self CreateString("", "objective", 1.2, "LEFT", "CENTER", -50, -190, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
+    self.menu["ui_credits"] = self CreateString("Developed by ^5DoktorSAS", "objective", 1, "TOP", "CENTER", 0, -100, (1, 1, 1), 0, (0, 0, 0), 0.8, 5, 0);
 
-    self.menu["select_bar"] = self DrawShader("white", 362.5 - 105, 58, 125, 13, GetColor("lightblue"), 0, 4, "TOP", "CENTER", 0);
+    self.menu["select_bar"] = self DrawShader("white", 362.5 - 105, 57.4, 125, 13, GetColor("lightblue"), 0, 4, "TOP", "CENTER", 0);
     self.menu["top_bar"] = self DrawShader("white", 362.5 - 105, 25, 125, 25, GetColor("cyan"), 0, 3, "TOP", "CENTER", 0);
     self.menu["background"] = self DrawShader("black", 362.5 - 105, 40, 125, 40, GetColor("cyan"), 0, 1, "TOP", "CENTER", 0);
-    self.menu["bottom_bar"] = self DrawShader("white", 362.5 - 105, 58, 125, 18, GetColor("cyan"), 0, 3, "TOP", "CENTER", 0);
+    self.menu["bottom_bar"] = self DrawShader("white", 362.5 - 105, 57.4, 125, 18, GetColor("cyan"), 0, 3, "TOP", "CENTER", 0);
 
     self thread handleMenu();
     self thread onDeath();
@@ -414,8 +270,8 @@ showMenu()
 
     self.menu["background"] setShader("black", 125, 55 + int(self.menu["options"].size / 2) + (self.menu["options"].size * 14));
 
-    self.menu["ui_credits"].y = -169.5 + (self.menu["options"].size * 14.6 + 5);
-    self.menu["bottom_bar"].y = 58 + (self.menu["options"].size * 14.6) + 14.6;
+    self.menu["ui_credits"].y = -169.5 + (self.menu["options"].size * 14.4 + 5);
+    self.menu["bottom_bar"].y = 57.4 + (self.menu["options"].size * (14.4)) + 14.4;
 
     self.menu["ui_title"] affectElement("alpha", 0.4, 1);
     self.menu["ui_options"] affectElement("alpha", 0.4, 1);
@@ -456,7 +312,7 @@ goToNextOption()
     {
         self.menu["index"] = 0;
     }
-    self.menu["select_bar"] affectElement("y", 0.1, 58 + (self.menu["index"] * 14.6));
+    self.menu["select_bar"] affectElement("y", 0.1, 57.4 + (self.menu["index"] * 14.4));
     wait 0.1;
 }
 
@@ -467,7 +323,7 @@ goToPreviusOption()
     {
         self.menu["index"] = self.menu["options"].size - 1;
     }
-    self.menu["select_bar"] affectElement("y", 0.1, 58 + (self.menu["index"] * 14.6));
+    self.menu["select_bar"] affectElement("y", 0.1, 57.4 + (self.menu["index"] * 14.4));
     wait 0.1;
 }
 
@@ -555,10 +411,10 @@ goToTheParent()
     {
         self.menu["index"] = self.menu["options"].size - 1;
     }
-    self.menu["select_bar"] affectElement("y", 0.1, 58 + (self.menu["index"] * 14.6));
+    self.menu["select_bar"] affectElement("y", 0.1, 57.4 + (self.menu["index"] * 14.4));
 
-    self.menu["ui_credits"] affectElement("y", 0.12, -169.5 + (self.menu["options"].size * 14.6 + 5));
-    self.menu["bottom_bar"] affectElement("y", 0.12, 58 + (self.menu["options"].size * 14.6) + 14.6);
+    self.menu["ui_credits"] affectElement("y", 0.12, -169.5 + (self.menu["options"].size * 14.4 + 5));
+    self.menu["bottom_bar"] affectElement("y", 0.12, 57.4 + (self.menu["options"].size * (14.4)) + 14.4);
     wait 0.1;
     self.menu["background"] setShader("black", 125, 55 + int(self.menu["options"].size / 2) + (self.menu["options"].size * 14));
 
@@ -578,16 +434,17 @@ openSubmenu(page)
 {
     self.menu["page"] = page;
     self.menu["index"] = 0;
-    self.menu["select_bar"] affectElement("y", 0.1, 58 + (self.menu["index"] * 14.6));
+    self.menu["select_bar"] affectElement("y", 0.1, 57.4 + (self.menu["index"] * 14.4));
     buildOptions();
 
-    self.menu["ui_credits"] affectElement("y", 0.12, -169.5 + (self.menu["options"].size * 14.6 + 5));
-    self.menu["bottom_bar"] affectElement("y", 0.12, 58 + (self.menu["options"].size * 14.6) + 14.6);
+    self.menu["ui_credits"] affectElement("y", 0.12, -169.5 + (self.menu["options"].size * 14.4 + 5));
+    self.menu["bottom_bar"] affectElement("y", 0.12, 57.4 + (self.menu["options"].size * (14.4)) + 15);
     wait 0.1;
     self.menu["background"] setShader("black", 125, 55 + int(self.menu["options"].size / 2) + (self.menu["options"].size * 14));
 
     self.menu["ui_options"] setSafeText(self, self.menu["ui_options_string"]);
 }
+
 buildOptions()
 {
     if ((self.menu["options"].size == 0) || (self.menu["options"].size > 0 && self.menu["options"][0].page != self.menu["page"]))
@@ -604,31 +461,28 @@ buildOptions()
             }
             break;
         case "scorestreaks":
-            addOption(0, "default", "UAV", ::giveHardpoint, "radar_mp;UAV");
-            addOption(0, "default", "Airstrike", ::giveHardpoint, "airstrike_mp;Airestrike");
-            addOption(0, "default", "Helicopter", ::giveHardpoint, "helicopter_mp;Helicopter");
+            addOption(0, "default", "Give Carepackage", ::giveKillstreaks, "airdrop_assault;Carepackage");
+            addOption(0, "default", "Give I.M.S", ::giveKillstreaks, "ims;I.M.S");
+            addOption(0, "default", "Give Vest", ::giveKillstreaks, "deployable_vest;Vest");
             break;
         case "trickshot":
             // addOption("default", "Random TS Class", ::testFunc);
             addOption(0, "default", "^2Set ^7Spawn", ::SetSpawn);
             addOption(0, "default", "^1Clear ^7Spawn", ::ClearSpawn);
-            addOption(0, "default", "TP to Spawn", ::LoadSpawn);
+            addOption(0, "default", "Teleport to Spawn", ::LoadSpawn);
             if(!level.teambased || getDvar("g_gametype") == "war")
             {
                 addOption(1, "default", "Fastlast", ::doFastLast);
                 addOption(1, "default", "Fastlast 2p", ::doFastLast2Pieces);
             }
-
             addOption(0, "default", "Canswap", ::canswap);
             addOption(0, "default", "Suicide", ::kys);
-            addOption(0, "default", "Platform", ::SpawnPlatform);
-            addOption(0, "default", "UFO", ::JoinUFO);
             break;
         case "default":
         default:
             if (isInteger(self.menu["page"]))
             {
-                pIndex = int(self.menu["page"]) - 1;
+                pIndex = int(self.menu["page"]) - 1; 
                 if(level.players[pIndex] isentityabot())
                 {
                     addOption(2, "players", "Freeze", ::freeze, level.players[pIndex]);
@@ -950,36 +804,6 @@ JoinUFO()
         self setcontents(100);
     }
 }
-DestroyPlatformOnDisconnect()
-{
-    self waittill("disconnect");
-    self.__vars["platform_visual"] delete ();
-    self.__vars["platform_collision"] delete ();
-}
-SpawnPlatform()
-{
-    if (!isDefined(self.__vars["platform_visual"]))
-    {
-        self.__vars["platform_visual"] = spawn("script_model", self.origin + (0, 0, 25));
-        self.__vars["platform_visual"] setmodel("com_bomb_objective");
-        self.__vars["platform_visual"] solid();
-        self.__vars["platform_visual"] setcontents(100);
-        self.__vars["platform_visual"].angles = self.angles + (0, 0, 180);
-
-        self.__vars["platform_collision"] = spawn("script_model", self.origin - (0, 0, 25));
-        self.__vars["platform_collision"] solid();
-        self.__vars["platform_collision"] setcontents(100);
-        self.__vars["platform_collision"] clonebrushmodeltoscriptmodel(level.collisions["patchclip_player_64_64_64"]);
-        self thread DestroyPlatformOnDisconnect();
-    }
-    else
-    {
-        self.__vars["platform_visual"].origin = self.origin;
-        self.__vars["platform_visual"].angles = self.angles + (0, 0, 180);
-        self.__vars["platform_collision"].origin = self.origin;
-        self.__vars["platform_collision"].angles = self.angles;
-    }
-}
 SetScore(kills)
 {
     self.extrascore0 = kills;
@@ -1029,6 +853,7 @@ doFastLast2Pieces()
         self SetScore(getWatchedDvar("scorelimit") - 2);
     }
 }
+
 SetSpawn()
 {
     self.spawn_origin = self.origin;
@@ -1049,10 +874,10 @@ LoadSpawn()
     self setPlayerAngles(self.spawn_angles);
 }
 
-giveHardpoint(args)
+giveKillstreaks(args)
 {
     sas = strTok(args, ";");
-    self maps\mp\gametypes\_hardpoints::givehardpointitem(sas[0]);
+    self maps\mp\killstreaks\_killstreaks::givekillstreak(sas[0], false, true, self);
     self iprintln(sas[1] + " is now ^2available");
 }
 // Suicide
@@ -1060,12 +885,10 @@ kys() { self suicide(); /*DoktorSAS*/ }
 
 canswap()
 {
-    currentWeapon = self getCurrentWeapon();
     self iprintln("Canswap ^3Dropped");
-    self giveweapon("h1_skorpion_mp");
-    self switchtoweaponimmediate("h1_skorpion_mp");
-    self dropitem("h1_skorpion_mp");
-    self switchtoweaponimmediate(currentWeapon);
+    self giveweapon("iw6_m27_mp");
+    self switchtoweaponimmediate("iw6_m27_mp");
+    self dropitem("iw6_m27_mp");
 }
 
 // Teleports
@@ -1269,13 +1092,13 @@ inizializeBots()
         }
     }
 
-    if( bots == 0 && getDvar("g_gametype") == "sd" || getDvar("g_gametype") == "sr")
+    if(bots == 0 && (getDvar("g_gametype") == "sd" || getDvar("g_gametype") == "sr"))
     {
-        spawn_bots(2, game["defenders"]);
+        _id_778F(2, game["defenders"]);
     }
     else if(bots == 0)
     {
-        spawn_bots(getDvarInt("sv_maxclients")/2, game["defenders"]);
+        _id_778F(getDvarInt("sv_maxclients")/2, game["defenders"]);
     }
 }
 isentityabot()
@@ -1289,25 +1112,13 @@ serverBotFill()
     // level waittill("prematch_over");
     for (;;)
     {
-        if(!level.teambased)
+        while (level.players.size < 14 && !level.gameended)
         {
-            while (level.players.size < 14 && !level.gameended)
-            {
-                self spawnBots(1);
-                wait 1;
-            }
-            if (level.players.size >= 17 && contBots() > 0)
-                kickbot();
+            _id_778F(1, "autoassign");
+            wait 1;
         }
-        else
-        {
-            while (level.players.size < 9 && !level.gameended)
-            {
-                self spawnBots(1);
-                wait 1;
-            }
-        }
-
+        if (level.players.size >= 17 && contBots() > 0)
+            kickbot();
 
         wait 0.05;
     }
@@ -1324,11 +1135,6 @@ contBots()
         }
     }
     return bots;
-}
-
-spawnBots(a)
-{
-    spawn_bots(a, "autoassign");
 }
 
 kickbot()
@@ -1356,6 +1162,7 @@ kickBotOnJoin()
         }
     }
 }
+
 // sd.gsc
 onJoinedTeam()
 {
@@ -1364,17 +1171,6 @@ onJoinedTeam()
     for(;;)
     {
         self waittill("joined_team");
-        if(level.teambased)
-        {
-            if(!self isclientabot() && self.pers["team"] == game["defenders"])
-            {
-                spawnclient( game["attackers"] );
-            }
-            else if(self.pers["team"] == game["attackers"])
-            {
-                spawnclient( game["defenders"] );
-            }   
-        }
         //self onPlayerSelectTeam();
     }
 }
@@ -1393,16 +1189,11 @@ spawnclient( team )
     self setclientomnvar( "ui_spectator_selected", -1 );
     self.spectating_actively = 0;
 
-    if ( maps\mp\_utility::ismlgsplitscreen() )
+    if ( getdvarint( "systemlink" ) && getdvarint( "xblive_competitionmatch" ) )
     {
         self setmlgspectator( 0 );
-        self setclientomnvar( "ui_use_mlg_hud", 0 );
+        self.pers["mlgSpectator"] = 0;
+        thread maps\mp\gametypes\_spectating::setmlgcamvisibility( 0 );
     }
-
-    if ( maps\mp\gametypes\_menus::teamchangeisfactionchange() || !maps\mp\_utility::allowclasschoice() )
-        thread maps\mp\gametypes\_playerlogic::setuioptionsmenu( -1 );
-    thread maps\mp\gametypes\_menus::showloadoutmenu();
-    self.addtoteam = team;
-    maps\mp\gametypes\_menus::setteam( team );
-    self maps\mp\gametypes\_playerlogic::spawnclient();
+    self maps\mp\gametypes\_menus::setteam( team );
 }
