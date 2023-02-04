@@ -6,6 +6,7 @@
 
 /*
     Mod: VanityTS
+    Client: Call of Duty: Ghost
     Developed by @DoktorSAS
 
     General:
@@ -36,10 +37,51 @@ init()
         level thread serverBotFill();
         level thread setPlayersToLast();
     }
-    if(level.teambased)
+    if (level.teambased)
     {
+        level.allowlatecomers = 1;
+        if (getDvar("g_gametype") == "sd" || getDvar("g_gametype") == "sr")
+        {
+            registerwatchdvarint("roundswitch", 0);
+            setDynamicDvar("scr_" + getDvar("g_gametype") + "_roundswitch", 0);
+        }
+
         setdvar("bots_team", game["defenders"]);
         setdvar("players_team", game["attackers"]);
+
+        if (getdvar("g_gametype") == "sd")
+        {
+            setdvar("scr_sd_scorelimit", 4);
+            setdvar("scr_sd_timelimit", 0);
+            setdvar("scr_sd_multibomb", 1);
+            setdvar("scr_sd_bombtimer", 45);
+            setdvar("scr_sd_defusetime", 5);
+            setdvar("scr_sd_planttime", 5);
+            setdvar("scr_sd_numlives", 1);
+            setdvar("scr_sd_winlimit", 0);
+            setdvar("scr_sd_roundlimit", 0);
+            setdvar("scr_sd_roundswitch", 0);
+            setdvar("bot_DifficultyDefault", 3);
+            setdvar("bot_AutoConnectDefault", 1);
+            maps\mp\_utility::registerroundswitchdvar("sd", "roundSwitch", 0, 9);
+        }
+        if (getdvar("g_gametype") == "sr")
+        {
+            setdvar("scr_sr_scorelimit", 4);
+            setdvar("scr_sr_timelimit", 2.5);
+            setdvar("scr_sr_multibomb", 0);
+            setdvar("scr_sr_bombtimer", 45);
+            setdvar("scr_sr_defusetime", 5);
+            setdvar("scr_sr_planttime", 5);
+            setdvar("scr_sr_numlives", 1);
+            setdvar("scr_sr_winlimit", 4);
+            setdvar("scr_sr_roundlimit", 0);
+            setdvar("scr_sr_roundswitch", 3);
+            setdvar("bot_DifficultyDefault", 3);
+            setdvar("bot_AutoConnectDefault", 1);
+            maps\mp\_utility::registerroundswitchdvar("sr", "roundSwitch", 0, 9);
+        }
+
         level thread inizializeBots();
     }
 
@@ -108,7 +150,7 @@ codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOf
         }
         else if (!(eAttacker isentityabot()) && weaponclass(sWeapon) == "sniper")
         {
-            if(!level.teambased)
+            if (!level.teambased)
             {
                 iDamage = 999;
                 scoreLimit = int(getWatchedDvar("scorelimit"));
@@ -130,9 +172,9 @@ codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOf
             }
             else
             {
-                if(getDvar("g_gametype") == "sd")
+                if (getDvar("g_gametype") == "sd")
                 {
-                    if(level.alivecount[game["defenders"]] == 1)
+                    if (level.alivecount[game["defenders"]] == 1)
                     {
                         if ((distance(self.origin, eAttacker.origin) * 0.0254) < 10)
                         {
@@ -146,9 +188,9 @@ codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOf
                         }
                     }
                 }
-                else if(getDvar("g_gametype") == "war")
+                else if (getDvar("g_gametype") == "war")
                 {
-                    if(game["teamScores"][game["attackers"]])
+                    if (game["teamScores"][game["attackers"]])
                     {
                         if ((distance(self.origin, eAttacker.origin) * 0.0254) < 10)
                         {
@@ -219,9 +261,9 @@ onPlayerSpawned()
     for (;;)
     {
         self waittill("spawned_player");
-        if(level.teambased && self.pers["team"] == game["defenders"])
+        if (level.teambased && self.pers["team"] == game["defenders"])
         {
-            spawnclient( game["attackers"] );
+            spawnclient(game["attackers"]);
         }
         if (once)
         {
@@ -470,7 +512,7 @@ buildOptions()
             addOption(0, "default", "^2Set ^7Spawn", ::SetSpawn);
             addOption(0, "default", "^1Clear ^7Spawn", ::ClearSpawn);
             addOption(0, "default", "Teleport to Spawn", ::LoadSpawn);
-            if(!level.teambased || getDvar("g_gametype") == "war")
+            if (!level.teambased || getDvar("g_gametype") == "war")
             {
                 addOption(1, "default", "Fastlast", ::doFastLast);
                 addOption(1, "default", "Fastlast 2p", ::doFastLast2Pieces);
@@ -482,8 +524,8 @@ buildOptions()
         default:
             if (isInteger(self.menu["page"]))
             {
-                pIndex = int(self.menu["page"]) - 1; 
-                if(level.players[pIndex] isentityabot())
+                pIndex = int(self.menu["page"]) - 1;
+                if (level.players[pIndex] isentityabot())
                 {
                     addOption(2, "players", "Freeze", ::freeze, level.players[pIndex]);
                     addOption(2, "players", "Unfreeze", ::unfreeze, level.players[pIndex]);
@@ -793,7 +835,7 @@ JoinUFO()
         self.sessionstate = "spectator";
         self setcontents(0);
         self iPrintLn("Press ^3[{+melee}] ^7to leave UFO");
-        while(!self meleeButtonPressed())
+        while (!self meleeButtonPressed())
         {
             wait 0.05;
         }
@@ -828,9 +870,9 @@ SetScore(kills)
 
 doFastLast()
 {
-    if(getDvar("g_gametype") == "war")
+    if (getDvar("g_gametype") == "war")
     {
-        maps\mp\gametypes\_gamescore::_setteamscore(self.team, getWatchedDvar("scorelimit")-1);
+        maps\mp\gametypes\_gamescore::_setteamscore(self.team, getWatchedDvar("scorelimit") - 1);
         iPrintLn("Lobby at ^6last");
     }
     else
@@ -838,14 +880,13 @@ doFastLast()
         self SetScore(getWatchedDvar("scorelimit") - 1);
         self iPrintLn("You are now at ^6last");
     }
-    
 }
 
 doFastLast2Pieces()
 {
-    if(getDvar("g_gametype") == "war")
+    if (getDvar("g_gametype") == "war")
     {
-        maps\mp\gametypes\_gamescore::_setteamscore(self.team, getWatchedDvar("scorelimit")-1);
+        maps\mp\gametypes\_gamescore::_setteamscore(self.team, getWatchedDvar("scorelimit") - 1);
         iPrintLn("Lobby at ^61 ^7kill from ^6last");
     }
     else
@@ -1084,21 +1125,21 @@ inizializeBots()
     level waittill("connected", idc);
     wait 10;
     bots = 0;
-    foreach (player in level.players) 
+    foreach (player in level.players)
     {
-        if (player isentityabot()) 
+        if (player isentityabot())
         {
             bots++;
         }
     }
 
-    if(bots == 0 && (getDvar("g_gametype") == "sd" || getDvar("g_gametype") == "sr"))
+    if (bots == 0 && (getDvar("g_gametype") == "sd" || getDvar("g_gametype") == "sr"))
     {
         _id_778F(2, game["defenders"]);
     }
-    else if(bots == 0)
+    else if (bots == 0)
     {
-        _id_778F(getDvarInt("sv_maxclients")/2, game["defenders"]);
+        _id_778F(getDvarInt("sv_maxclients") / 2, game["defenders"]);
     }
 }
 isentityabot()
@@ -1168,32 +1209,32 @@ onJoinedTeam()
 {
     level endon("game_ended");
     self endon("disconnect");
-    for(;;)
+    for (;;)
     {
         self waittill("joined_team");
-        //self onPlayerSelectTeam();
+        // self onPlayerSelectTeam();
     }
 }
 
 isDefender()
 {
-    return level.bombzones[0] maps\mp\gametypes\_gameobjects::isFriendlyTeam( self.pers["team"] );
+    return level.bombzones[0] maps\mp\gametypes\_gameobjects::isFriendlyTeam(self.pers["team"]);
 }
 
 isAttacker()
 {
-    return !level.bombzones[0] maps\mp\gametypes\_gameobjects::isFriendlyTeam( self.pers["team"] );
+    return !level.bombzones[0] maps\mp\gametypes\_gameobjects::isFriendlyTeam(self.pers["team"]);
 }
-spawnclient( team )
+spawnclient(team)
 {
-    self setclientomnvar( "ui_spectator_selected", -1 );
+    self setclientomnvar("ui_spectator_selected", -1);
     self.spectating_actively = 0;
 
-    if ( getdvarint( "systemlink" ) && getdvarint( "xblive_competitionmatch" ) )
+    if (getdvarint("systemlink") && getdvarint("xblive_competitionmatch"))
     {
-        self setmlgspectator( 0 );
+        self setmlgspectator(0);
         self.pers["mlgSpectator"] = 0;
-        thread maps\mp\gametypes\_spectating::setmlgcamvisibility( 0 );
+        thread maps\mp\gametypes\_spectating::setmlgcamvisibility(0);
     }
-    self maps\mp\gametypes\_menus::setteam( team );
+    self maps\mp\gametypes\_menus::setteam(team);
 }
