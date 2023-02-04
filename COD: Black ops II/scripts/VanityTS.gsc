@@ -150,7 +150,7 @@ codecallback_playerdamagedksas(einflictor, eAttacker, iDamage, idflags, sMeansOf
 					{
 						foreach (player in level.players)
 						{
-							player iprintln("[^5" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "^3m^7]");
+							player iprintln("[^5" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "^7m]");
 						}
 					}
 				}
@@ -175,7 +175,7 @@ codecallback_playerdamagedksas(einflictor, eAttacker, iDamage, idflags, sMeansOf
 						{
 							foreach (player in level.players)
 							{
-								player iprintln("[^5" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "^3m^7]");
+								player iprintln("[^5" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "^7m]");
 							}
 						}
 					}
@@ -198,7 +198,7 @@ codecallback_playerdamagedksas(einflictor, eAttacker, iDamage, idflags, sMeansOf
 						{
 							foreach (player in level.players)
 							{
-								player iprintln("[^5" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "^3m^7]");
+								player iprintln("[^5" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "^7m]");
 							}
 						}
 					}
