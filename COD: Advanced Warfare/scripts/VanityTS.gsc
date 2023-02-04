@@ -266,9 +266,13 @@ onPlayerSpawned()
     self.__vars = [];
     self.__vars["level"] = 1;
     self.__vars["sn1buttons"] = 1;
-    self thread kickBotOnJoin();
     self thread onChangedClass();
     self thread initOverFlowFix();
+
+    if(!level.teambased)
+    {
+        self thread kickBotOnJoin();
+    }
 
     once = 1;
     for (;;)
@@ -304,7 +308,7 @@ onKillEnemy()
         self setclientomnvar("ui_round_end_match_bonus", randomIntRange(230, 1800));
         scoreLimit = int(getWatchedDvar("scorelimit"));
 
-        if (self.pers["score"] == scoreLimit - 1)
+        if (self.pers["extrascore0"] == scoreLimit - 1)
         {
             self freezeControls(1);
             self iclientprintlnbold("You are at ^6Last");
