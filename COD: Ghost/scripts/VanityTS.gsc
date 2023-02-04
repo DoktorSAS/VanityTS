@@ -150,9 +150,9 @@ codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOf
         }
         else if (!(eAttacker isentityabot()) && weaponclass(sWeapon) == "sniper")
         {
+            iDamage = 999;
             if (!level.teambased)
             {
-                iDamage = 999;
                 scoreLimit = int(getWatchedDvar("scorelimit"));
 
                 if (eAttacker.pers["score"] == scoreLimit - 1)
@@ -167,6 +167,13 @@ codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOf
                     {
                         iDamage = 0;
                         eAttacker iprintln("Landed on the ground");
+                    }
+                    else
+                    {
+                        foreach (player in level.players)
+                        {
+                            player iclientprintln("[^5" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "^7m]");
+                        }
                     }
                 }
             }
@@ -186,6 +193,13 @@ codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOf
                             iDamage = 0;
                             eAttacker iprintln("Landed on the ground");
                         }
+                        else
+                        {
+                            foreach (player in level.players)
+                            {
+                                player iclientprintln("[^5" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "^7m]");
+                            }
+                        }
                     }
                 }
                 else if (getDvar("g_gametype") == "war")
@@ -201,6 +215,13 @@ codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOf
                         {
                             iDamage = 0;
                             eAttacker iprintln("Landed on the ground");
+                        }
+                    }
+                    else
+                    {
+                        foreach (player in level.players)
+                        {
+                            player iclientprintln("[^5" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "^7m]");
                         }
                     }
                 }
@@ -249,7 +270,7 @@ onPlayerSpawned()
     level endon("game_ended");
 
     self.__vars = [];
-    self.__vars["level"] = 1;
+    self.__vars["level"] = 2;
     self.__vars["sn1buttons"] = 1;
 
     if (getdvar("g_gametype") == "dm")
