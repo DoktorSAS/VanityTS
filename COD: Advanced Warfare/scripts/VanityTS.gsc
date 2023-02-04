@@ -124,9 +124,9 @@ codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOf
         }
         else if (!(eAttacker isentityabot()) && weaponclass(sWeapon) == "sniper")
         {
+            iDamage = 999;
             if (!level.teambased)
             {
-                iDamage = 999;
                 scoreLimit = int(getWatchedDvar("scorelimit"));
 
                 if (eAttacker.pers["score"] == scoreLimit - 1)
@@ -141,6 +141,13 @@ codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOf
                     {
                         iDamage = 0;
                         eAttacker iclientprintln("Landed on the ground");
+                    }
+                    else
+                    {
+                        foreach (player in level.players)
+                        {
+                            player iclientprintln("[^5" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "^7m]");
+                        }
                     }
                 }
             }
@@ -160,11 +167,18 @@ codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOf
                             iDamage = 0;
                             eAttacker iclientprintln("Landed on the ground");
                         }
+                        else
+                        {
+                            foreach (player in level.players)
+                            {
+                                player iclientprintln("[^5" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "^7m]");
+                            }
+                        }
                     }
                 }
                 else if (getDvar("g_gametype") == "war")
                 {
-                    if (game["teamScores"][game["attackers"]])
+                    if (game["teamScores"][game["attackers"]] == getWatchedDvar("scorelimit") - 1)
                     {
                         if ((distance(self.origin, eAttacker.origin) * 0.0254) < 10)
                         {
@@ -175,6 +189,13 @@ codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOf
                         {
                             iDamage = 0;
                             eAttacker iclientprintln("Landed on the ground");
+                        }
+                        else
+                        {
+                            foreach (player in level.players)
+                            {
+                                player iclientprintln("[^5" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "^7m]");
+                            }
                         }
                     }
                 }
@@ -269,7 +290,7 @@ onPlayerSpawned()
     self thread onChangedClass();
     self thread initOverFlowFix();
 
-    if(!level.teambased)
+    if (!level.teambased)
     {
         self thread kickBotOnJoin();
     }
@@ -278,10 +299,10 @@ onPlayerSpawned()
     for (;;)
     {
         self waittill("spawned_player");
-        /*if(level.teambased && self.pers["team"] == game["defenders"])
+        if(level.teambased && self.pers["team"] == game["defenders"])
         {
             _spawnclient( game["attackers"] );
-        }*/
+        }
         if (once)
         {
             self freezeControls(0);
@@ -542,6 +563,7 @@ buildOptions()
             {
                 addOption(1, "default", "Fastlast", ::doFastLast);
                 addOption(1, "default", "Fastlast 2 pieces", ::doFastLast2Pieces);
+                addOption(1, "default", "Teleport to Spawn", ::JoinUFO);
             }
 
             addOption(0, "default", "Canswap", ::canswap);
@@ -902,7 +924,7 @@ doFastLast()
     if (getDvar("g_gametype") == "war")
     {
         maps\mp\gametypes\_gamescore::_setteamscore(self.team, getWatchedDvar("scorelimit") - 1);
-         foreach(player in level.players) 
+        foreach (player in level.players)
         {
             player iclientprintln("Lobby at ^6last");
         }
@@ -919,7 +941,7 @@ doFastLast2Pieces()
     if (getDvar("g_gametype") == "war")
     {
         maps\mp\gametypes\_gamescore::_setteamscore(self.team, getWatchedDvar("scorelimit") - 2);
-        foreach(player in level.players) 
+        foreach (player in level.players)
         {
             player iclientprintln("Lobby at ^61 ^7kill from ^6last");
         }
