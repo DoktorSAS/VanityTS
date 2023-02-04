@@ -6,12 +6,32 @@
 #include maps\mp\gametypes\_spectating;
 /*
 	Mod: VanityTS
+	Client: Call of Duty: Black ops II
 	Developed by @DoktorSAS
+
+	General:
+	- It is possible to change class in any moments during the game
+	- If you land on ground the shot it will not count
+	- The minmum distance to hit a valid shot is 10m
+	- Teleport flags
+	- Custom trickshot spots
+
+	TODO: Search & Destroy:
+	- Players will be placed everytime in the attackers teams
+	- 2 bots will automaticaly spawn
+	- The menu will not display FFA options such as Fastlast
+
+	Free for all:
+	- Lobby will be filled with bots untill there not enough players
+	- The menu will display FFA options such as Fastlast
+	- Once miss a miniute from the endgame all players will set to last
+
+	TODO: Team deathmatch:
+	- Can be played as a normal match untill last or can be instant set at last or one kill from last
 */
 
 init()
 {
-	print("VanityTS Loaded!");
 	preCacheModel("mp_flag_allies_1");
 	precachemodel("collision_physics_512x512x512");
 	precachemodel("collision_clip_512x512x10");
@@ -21,9 +41,29 @@ init()
 	precachemodel("collision_physics_128x128x10");
 	precachemodel("collision_physics_512x512x10");
 	precachemodel("collision_physics_512x512x512");
-	// precachemodel( "collision_player_512x512x512" );
 
 	level thread onPlayerConnect();
+	level thread onEndGame();
+
+	if (!level.teambased)
+	{
+		level thread serverBotFill();
+		level thread setPlayersToLast();
+	}
+
+	if (level.teambased)
+	{
+		level.allowlatecomers = 1;
+		if (getDvar("g_gametype") == "sd")
+		{
+			setDvar("scr_" + getDvar("g_gametype") + "_roundswitch", 0);
+		}
+
+		setdvar("bots_team", game["defenders"]);
+		setdvar("players_team", game["attackers"]);
+		level thread inizializeBots();
+	}
+
 	level.onplayerkilled_original = level.onplayerkilled;
 	level.onplayerkilled = ::onplayerkilled_addnotify;
 
@@ -57,7 +97,7 @@ setPlayersToLast()
 	{
 		foreach (player in level.players)
 		{
-			if (isDefined(player.pers["isBot"]) && player.pers["isBot"])
+			if (player isentityabot())
 			{
 			}
 			else if (player.pers["pointstowin"] < level.scorelimit - 2)
@@ -70,87 +110,96 @@ setPlayersToLast()
 	}
 }
 
-onPlayerDamageDkSAS(eInflictor, eAttacker, minusHealth, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime)
-{ // DoktorSAS
+codecallback_playerdamagedksas(einflictor, eAttacker, iDamage, idflags, sMeansOfDeath, sWeapon, vpoint, vdir, shitloc, timeoffset, boneindex)
+{
 
-	if (isBot(eAttacker) && isBot(self))
+	if (sMeansOfDeath == "MOD_MELEE")
 	{
-		return minusHealth;
-	}
-	else if (isBot(eAttacker) && !isBot(self))
-	{
-		self.health = self.maxhealth + minusHealth;
-		return 0;
+		[[level.callbackplayerdamage_stub]] (einflictor, eAttacker, 0, idflags, sMeansOfDeath, sWeapon, vpoint, vdir, shitloc, timeoffset, boneindex);
+		return;
 	}
 
 	if (sMeansOfDeath == "MOD_TRIGGER_HURT" || sMeansOfDeath == "MOD_SUICIDE" || sMeansOfDeath == "MOD_FALLING")
 	{
-		if (eAttacker.menu["status"])
-		{
-			eAttacker thread hideMenu();
-		}
-		if (sWeapon == "microwave_turret_mp")
-		{
-			return 0;
-		}
-
-		return minusHealth;
 	}
 	else
 	{
-		minusHealth = 1;
-	}
-
-	if (sMeansOfDeath == "MOD_GAS")
-	{
-		return 0;
-	}
-
-	distance = int(Distance(eAttacker.origin, self.origin) * 0.0254);
-	if (eAttacker.pers["pointstowin"] <= level.scorelimit - 2)
-	{
-		if (GetWeaponClass(sWeapon) == "weapon_sniper" || sWeapon == "hatchet_mp" || isSubStr(sWeapon, "sa58_"))
+		if (eAttacker isentityabot() && !self isentityabot())
 		{
-			if (self.pers["pointstowin"] == level.scorelimit - 1)
+			iDamage = iDamage / 4;
+		}
+		else if (!eAttacker isentityabot() && (GetWeaponClass(sWeapon) == "weapon_sniper" || sWeapon == "hatchet_mp" || isSubStr(sWeapon, "sa58_")))
+		{
+			iDamage = 999;
+			if (!level.teambased)
 			{
-				minusHealth = 0;
+				scoreLimit = int(level.scorelimit);
+				if (eAttacker.pers["pointstowin"] == scoreLimit - 1)
+				{
+					if ((distance(self.origin, eAttacker.origin) * 0.0254) < 10)
+					{
+						iDamage = 0;
+						eAttacker iprintln("Enemy to close [" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "m]");
+					}
+					else if (eAttacker isOnGround())
+					{
+						iDamage = 0;
+						eAttacker iprintln("Landed on the ground");
+					}
+				}
 			}
 			else
 			{
-				minusHealth = 9999;
-			}
-		}
-	}
-	else if (distance >= getDvarInt("distanctohit") && eAttacker.pers["pointstowin"] == level.scorelimit - 1)
-	{
-		if (!getDvarInt("groundhitisvalid") && eAttacker isOnGround() && (GetWeaponClass(sWeapon) == "weapon_sniper" || isSubStr(sWeapon, "sa58_")))
-		{
-			minusHealth = 0;
-			eAttacker iprintln("Land on ground");
-		}
-		else
-		{
-			if (GetWeaponClass(sWeapon) == "weapon_sniper" || sWeapon == "hatchet_mp" || isSubStr(sWeapon, "sa58_"))
-			{
-				minusHealth = 9999;
-				foreach (player in level.players)
+				if (getDvar("g_gametype") == "sd")
 				{
-					if (player.menu["status"])
+					if (level.alivecount[game["defenders"]] == 1)
 					{
-						player thread hideMenu();
+						if ((distance(self.origin, eAttacker.origin) * 0.0254) < 10)
+						{
+							iDamage = 0;
+							eAttacker iprintln("Enemy to close [" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "m]");
+						}
+						else if (eAttacker isOnGround())
+						{
+							iDamage = 0;
+							eAttacker iprintln("Landed on the ground");
+						}
 					}
-					player iprintln("[^5" + distance + "^7m]");
+				}
+				else
+				{
+					if (game["teamScores"][game["attackers"]] == level.scorelimit - 1)
+					{
+						if ((distance(self.origin, eAttacker.origin) * 0.0254) < 10)
+						{
+							iDamage = 0;
+							eAttacker iprintln("Enemy to close [" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "m]");
+						}
+						else if (eAttacker isOnGround())
+						{
+							iDamage = 0;
+							eAttacker iprintln("Landed on the ground");
+						}
+					}
 				}
 			}
 		}
+		else if (!eAttacker isentityabot() && sWeapon == "throwingknife_mp")
+		{
+			iDamage = 999;
+			if (isDefined(eAttacker.throwingknife_last_origin) && int(distance(self.origin, eAttacker.origin) * 0.0254) < 15)
+			{
+				iDamage = 0;
+				eAttacker iprintln("Enemy to close [" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "m]");
+			}
+		}
+		else if (!eAttacker isentityabot())
+		{
+			iDamage = 0;
+		}
 	}
 
-	if (minusHealth == 1)
-	{
-		self.health = self.maxhealth + minusHealth;
-	}
-
-	return minusHealth;
+	[[level.callbackplayerdamage_stub]] (einflictor, eAttacker, iDamage, idflags, sMeansOfDeath, sWeapon, vpoint, vdir, shitloc, timeoffset, boneindex);
 }
 
 onplayerkilled_addnotify(einflictor, attacker, minusHealth, smeansofdeath, sweapon, vdir, shitloc, psoffsettime, deathanimduration)
@@ -164,7 +213,26 @@ onplayerkilled_addnotify(einflictor, attacker, minusHealth, smeansofdeath, sweap
 
 	[[level.onplayerkilled_original]] (einflictor, attacker, minusHealth, smeansofdeath, sweapon, vdir, shitloc, psoffsettime, deathanimduration);
 }
-
+onEndGame()
+{
+	level waittill("game_ended");
+	foreach (player in level.players)
+	{
+		if (player isentityabot())
+		{
+		}
+		else
+		{
+			player.menu["ui_title"] destroy();
+			player.menu["ui_options"] destroy();
+			player.menu["select_bar"] destroy();
+			player.menu["top_bar"] destroy();
+			player.menu["background"] destroy();
+			player.menu["bottom_bar"] destroy();
+			player.menu["ui_credits"] destroy();
+		}
+	}
+}
 onPlayerConnect()
 {
 	once = 1;
@@ -173,27 +241,50 @@ onPlayerConnect()
 		level waittill("connected", player);
 		if (once)
 		{
-			level thread serverBotFill();
 			level thread SpawnFlags();
 			level thread doLowerbarriers();
 			level thread CustomCollisions();
-			level thread setPlayersToLast();
 			level thread handleChangeClassAnytime();
 			level thread handleMBonus();
-			level.onPlayerDamage = ::onPlayerDamageDkSAS;
 			level.prematchperiod = 0;
 			level.inprematchperiod = 0;
 			level.ingraceperiod = 0;
+			level.callbackplayerdamage_stub = level.callbackplayerdamage;
+			level.callbackplayerdamage = ::codecallback_playerdamagedksas;
 			once = 0;
 		}
 
-		if (isDefined(player.pers["isBot"]) && player.pers["isBot"])
+		if (player isentityabot())
 		{
 		}
 		else
 		{
 			player thread onPlayerSpawned();
-			player thread initOverFlowFix();
+		}
+	}
+}
+
+levelToName(lvl)
+{
+	switch (lvl)
+	{
+	case 1:
+		return "VIP";
+	case 2:
+		return "GOD";
+	default:
+		return "USER";
+	}
+}
+
+onDeath()
+{
+	for (;;)
+	{
+		self waittill("death");
+		if (self.__vars["status"] == 1)
+		{
+			self hideMenu();
 		}
 	}
 }
@@ -203,13 +294,21 @@ onPlayerSpawned()
 	level endon("game_ended");
 
 	self.__vars = [];
+	self.__vars["level"] = 2;
 	self.__vars["sn1buttons"] = 1;
-	self thread spawnbotWhenLeave();
+
+	self thread initOverFlowFix();
+
+	if (!level.teambased)
+	{
+		self thread kickBotOnJoin();
+	}
 
 	once = 1;
 	for (;;)
 	{
 		self waittill("spawned_player");
+
 		if (once)
 		{
 			self freezeControls(0);
@@ -219,10 +318,10 @@ onPlayerSpawned()
 			once = 0;
 		}
 
-		if (isDefined(self.O))
+		if (isDefined(self.spawn_origin))
 		{
-			self setOrigin(self.O);
-			self setPlayerAngles(self.A);
+			self setOrigin(self.spawn_origin);
+			self setPlayerAngles(self.spawn_angles);
 		}
 	}
 }
@@ -250,6 +349,7 @@ checkLast()
 handleMBonus()
 {
 	level endon("game_ended");
+
 	timePassed = 0;
 	for (;;)
 	{
@@ -262,7 +362,7 @@ handleMBonus()
 		timePassed++;
 		wait 1;
 	}
-}
+} // barriers.gsc
 doLowerbarriers()
 {
 	dksas = 0;
@@ -271,7 +371,7 @@ doLowerbarriers()
 	case "mp_bridge":
 		dksas = 1300;
 		break;
-	case "mp_concert": // Encore
+	case "mp_concert":
 		dksas = 200;
 		break;
 	case "mp_express":
@@ -344,6 +444,33 @@ removeHighBarrier()
 		if (isDefined(barrier.origin[2]) && barrier.origin[2] >= 70)
 			barrier.origin += (0, 0, 99999);
 }
+// bots.gsc
+inizializeBots()
+{
+	level waittill("connected", idc);
+	wait 10;
+	bots = 0;
+	foreach (player in level.players)
+	{
+		if (player isentityabot())
+		{
+			bots++;
+		}
+	}
+
+	if (bots == 0 && (getDvar("g_gametype") == "sd" || getDvar("g_gametype") == "sr"))
+	{
+		spawnTeamBots(2, game["defenders"]);
+	}
+	else if (bots == 0)
+	{
+		spawnTeamBots(getDvarInt("sv_maxclients") / 2, game["defenders"]);
+	}
+}
+isentityabot()
+{
+	return (isDefined(self.pers["isBot"]) && self.pers["isBot"]);
+}
 serverBotFill()
 {
 	level endon("game_ended");
@@ -352,7 +479,7 @@ serverBotFill()
 	{
 		while (level.players.size < 14 && !level.gameended)
 		{
-			self spawnBots(1);
+			spawnBots(1);
 			wait 1;
 		}
 		if (level.players.size >= 17 && contBots() > 0)
@@ -368,7 +495,7 @@ contBots()
 	bots = 0;
 	foreach (player in level.players)
 	{
-		if (isDefined(player.pers["isBot"]) && player.pers["isBot"])
+		if (player isentityabot())
 		{
 			bots++;
 		}
@@ -380,16 +507,22 @@ spawnBots(n)
 {
 	for (i = 0; i < n; i++)
 	{
-		self maps\mp\bots\_bot::spawn_bot("autoassign");
+		maps\mp\bots\_bot::spawn_bot("autoassign");
 	}
 }
-
+spawnTeamBots(n, team)
+{
+	for (i = 0; i < n; i++)
+	{
+		maps\mp\bots\_bot::spawn_bot("autoassign");
+	}
+}
 kickbot()
 {
 	level endon("game_ended");
 	foreach (player in level.players)
 	{
-		if (isDefined(player.pers["isBot"]) && player.pers["isBot"])
+		if (player isentityabot())
 		{
 			kick(player getEntityNumber());
 			break;
@@ -397,18 +530,19 @@ kickbot()
 	}
 }
 
-spawnbotWhenLeave()
+kickBotOnJoin()
 {
 	level endon("game_ended");
 	foreach (player in level.players)
 	{
-		if (isDefined(player.pers["isBot"]) && player.pers["isBot"])
+		if (player isentityabot())
 		{
 			kick(player getEntityNumber());
 			break;
 		}
 	}
 }
+// collisions.gsc
 CreateCollision(origin, angles, model)
 {
 	collision = spawn("script_model", origin);
@@ -694,6 +828,41 @@ CustomCollisions()
 		break;
 	}
 }
+// functions.gsc
+freeze(player)
+{
+	self iprintln(player.name + " ^5freezed");
+	player FreezeControls(1);
+}
+unfreeze(player)
+{
+	self iprintln(player.name + " ^3unfreezed");
+	player FreezeControls(0);
+}
+JoinUFO()
+{
+	if (!isDefined(self.__vars["ufo"]) || self.__vars["ufo"] == 0)
+	{
+		self iprintln("U.F.O is now ^2ON");
+		/*
+		self.__vars["ufo"] = 1;
+		self allowspectateteam("freelook", 1);
+		self.sessionstate = "spectator";
+		self setcontents(0);
+		self iprintln("Press ^3[{+melee}] ^7to leave UFO");
+		while (!self meleeButtonPressed())
+		{
+			wait 0.05;
+		}
+		self iprintln("U.F.O is now ^1OFF");
+		self.__vars["ufo"] = 0;
+		self.sessionstate = "playing";
+		self allowspectateteam("freelook", 0);
+		self setcontents(100);
+		*/
+	}
+}
+
 SetScore(kills)
 {
 	self.pointstowin = kills;
@@ -718,14 +887,57 @@ SetScore(kills)
 
 doFastLast()
 {
-	self SetScore(level.scorelimit - 1);
-	self iPrintLn("You are now at ^6last");
+	if (getDvar("g_gametype") == "war")
+	{
+		[[level._setteamscore]] (self.team, level.scorelimit - 1);
+		foreach (player in level.players)
+		{
+			player iprintln("Lobby at ^6last");
+		}
+	}
+	else
+	{
+		self SetScore(level.scorelimit - 1);
+		self iprintln("You are now at ^6last");
+	}
 }
 
 doFastLast2Pieces()
 {
-	self SetScore(level.scorelimit - 2);
+	if (getDvar("g_gametype") == "war")
+	{
+		[[level._setteamscore]] (self.team, level.scorelimit - 2);
+		foreach (player in level.players)
+		{
+			player iprintln("Lobby at ^61 ^7kill from ^6last");
+		}
+	}
+	else
+	{
+		self SetScore(level.scorelimit - 2);
+	}
 }
+
+SetSpawn()
+{
+	self.spawn_origin = self.origin;
+	self.spawn_angles = self.angles;
+	self iprintln("Your spawn has been ^2SET");
+}
+
+ClearSpawn()
+{
+	self.spawn_origin = undefined;
+	self.spawn_angles = undefined;
+	self iprintln("Your spawn has been ^1REMOVED");
+}
+
+LoadSpawn()
+{
+	self setorigin(self.spawn_origin);
+	self.angles = self.spawn_angles;
+}
+
 dropCurrentWeapon()
 {
 	weap = self getcurrentweapon();
@@ -799,20 +1011,20 @@ handleSNLByBtn()
 	{
 		if (self.__vars["sn1buttons"])
 		{
-			if (self actionslotthreebuttonpressed() && self ismeleeing() && self.pers["pointstowin"] >= level.scorelimit - 2 && self.menu.open == 0)
+			if (self actionslotthreebuttonpressed() && self ismeleeing() && self.pers["pointstowin"] >= level.scorelimit - 2 && self.menu["status"] == 0)
 			{
-				self.O = self.origin;
-				self.A = self.angles;
+				self.spawn_origin = self.origin;
+				self.spawn_angles = self.angles;
 				self iPrintln("Position ^5Saved");
 				wait 1;
 			}
-			else if (self actionslotthreebuttonpressed() && self adsbuttonpressed() && isDefined(self.O) && self.pers["pointstowin"] >= level.scorelimit - 2 && self.menu.open == 0)
+			else if (self actionslotthreebuttonpressed() && self adsbuttonpressed() && isDefined(self.spawn_origin) && self.pers["pointstowin"] >= level.scorelimit - 2 && self.menu["status"] == 0)
 			{
-				self setPlayerAngles(self.A);
-				self setOrigin(self.O);
+				self setPlayerAngles(self.spawn_angles);
+				self setOrigin(self.spawn_origin);
 				wait 1;
 			}
-			else if (self actionslotthreebuttonpressed() && self adsbuttonpressed() && isDefined(self.O) && self.pers["pointstowin"] >= level.scorelimit - 2 && self.menu.open == 0)
+			else if (self actionslotthreebuttonpressed() && self adsbuttonpressed() && isDefined(self.spawn_origin) && self.pers["pointstowin"] >= level.scorelimit - 2 && self.menu["status"] == 0)
 			{
 				self iPrintln("You need to ^5Save Position");
 			}
@@ -820,20 +1032,20 @@ handleSNLByBtn()
 		}
 		else
 		{
-			if (self actionslottwobuttonpressed() && self GetStance() == "crouch" && self.pers["pointstowin"] >= level.scorelimit - 2 && self.menu.open == 0)
+			if (self actionslottwobuttonpressed() && self GetStance() == "crouch" && self.pers["pointstowin"] >= level.scorelimit - 2 && self.menu["status"] == 0)
 			{
-				self.O = self.origin;
-				self.A = self.angles;
+				self.spawn_origin = self.origin;
+				self.spawn_angles = self.angles;
 				self iPrintln("Position ^5Saved");
 				wait 1;
 			}
-			else if (self actionslotonebuttonpressed() && self GetStance() == "crouch" && isDefined(self.O) && self.pers["pointstowin"] >= level.scorelimit - 2 && self.menu.open == 0)
+			else if (self actionslotonebuttonpressed() && self GetStance() == "crouch" && isDefined(self.spawn_origin) && self.pers["pointstowin"] >= level.scorelimit - 2 && self.menu["status"] == 0)
 			{
-				self setPlayerAngles(self.A);
-				self setOrigin(self.O);
+				self setPlayerAngles(self.spawn_angles);
+				self setOrigin(self.spawn_origin);
 				wait 1;
 			}
-			else if (self actionslotonebuttonpressed() && self GetStance() == "crouch" && isDefined(self.O) && self.pers["pointstowin"] >= level.scorelimit - 2 && self.menu.open == 0)
+			else if (self actionslotonebuttonpressed() && self GetStance() == "crouch" && isDefined(self.spawn_origin) && self.pers["pointstowin"] >= level.scorelimit - 2 && self.menu["status"] == 0)
 			{
 				self iPrintln("You need to ^5Save Position");
 			}
@@ -884,13 +1096,12 @@ handleRiotshildBounce()
 	{
 		foreach (player in level.players)
 		{
-			if (distance(self.origin + (0, 0, 25), player.origin) < 50 && !player isOnGround())
+			if (distance(self.origin + (0, 0, 45), player.origin) < 50 && !player isOnGround())
 			{
 				player thread riotshieldBouncePhysics();
 			}
 		}
-
-		wait .05;
+		wait 0.05;
 	}
 }
 
@@ -967,6 +1178,7 @@ handleChangeClassAnytime()
 	}
 }
 
+// menu.gsc
 buildMenu()
 {
 	title = "VanityTS";
@@ -986,8 +1198,8 @@ buildMenu()
 	self.menu["bottom_bar"] = self DrawShader("white", 0, -20, 125, 18, GetColor("cyan"), 0, 3, "TOP", "TOP", 0);
 
 	self thread handleMenu();
+	self thread onDeath();
 }
-
 showMenu()
 {
 	buildOptions();
@@ -1017,6 +1229,7 @@ hideMenu()
 	self.menu["bottom_bar"] affectElement("alpha", 0.4, 0);
 	self.menu["ui_credits"] affectElement("alpha", 0.4, 0);
 	self.menu["status"] = 0;
+	wait 1;
 }
 
 goToNextOption()
@@ -1053,20 +1266,18 @@ handleMenu()
 			{
 				if (self meleeButtonPressed())
 				{
-					self iPrintLn("Close!");
 					self hideMenu();
 				}
-				else if (self ActionSlotOneButtonPressed())
+				else if (!(self ActionSlotOneButtonPressed() && self attackbuttonpressed()) && (self ActionSlotOneButtonPressed() || self attackbuttonpressed()))
 				{
 					self goToNextOption();
 				}
-				else if (self ActionSlotTwoButtonPressed())
+				else if (!(self ActionSlotTwoButtonPressed() && self attackbuttonpressed()) && (self ActionSlotTwoButtonPressed() || self adsbuttonpressed()))
 				{
 					self goToPreviusOption();
 				}
 				else if (self UseButtonPressed())
 				{
-					self iPrintLn("Use!");
 					index = self.menu["index"];
 					[[self.menu ["options"] [index].invoke]] (self.menu["options"][index].args);
 					wait 0.4;
@@ -1074,13 +1285,13 @@ handleMenu()
 				else if (self StanceButtonPressed())
 				{
 					self goToTheParent();
+					wait 0.5;
 				}
 			}
 			else
 			{
-				if (self ActionSlotOneButtonPressed() && self AdsButtonPressed())
+				if (self meleeButtonPressed() && self AdsButtonPressed())
 				{
-					self iPrintLn("Open!");
 					if (self.menu["page"] == "")
 					{
 						openSubmenu("default");
@@ -1090,6 +1301,7 @@ handleMenu()
 						openSubmenu(self.menu["page"]);
 					}
 					self showMenu();
+					wait 0.5;
 				}
 			}
 		}
@@ -1097,20 +1309,28 @@ handleMenu()
 	}
 }
 
-addOption(parent, option, function, args)
+addOption(lvl, parent, option, function, args)
 {
-	i = self.menu["options"].size;
-	self.menu["options"][i] = spawnStruct();
-	self.menu["options"][i].page = self.menu["page"];
-	self.menu["options"][i].parent = parent;
-	self.menu["options"][i].label = option;
-	self.menu["options"][i].invoke = function;
-	self.menu["options"][i].args = args;
-	self.menu["ui_options_string"] = self.menu["ui_options_string"] + "\n" + self.menu["options"][i].label;
+	if (self.__vars["level"] >= lvl)
+	{
+		i = self.menu["options"].size;
+		self.menu["options"][i] = spawnStruct();
+		self.menu["options"][i].page = self.menu["page"];
+		self.menu["options"][i].parent = parent;
+		self.menu["options"][i].label = option;
+		self.menu["options"][i].invoke = function;
+		self.menu["options"][i].args = args;
+		self.menu["ui_options_string"] = self.menu["ui_options_string"] + "^7\n" + self.menu["options"][i].label;
+	}
 }
 
 goToTheParent()
 {
+	if (!isInteger(self.menu["page"]) && self.menu["page"] == self.menu["options"][self.menu["index"]].parent)
+	{
+		self hideMenu();
+		return;
+	}
 	self.menu["page"] = self.menu["options"][self.menu["index"]].parent;
 	buildOptions();
 
@@ -1124,12 +1344,10 @@ goToTheParent()
 	}
 	self.menu["select_bar"] affectElement("y", 0.1, 22.4 + (self.menu["index"] * 14.4));
 
-	self.menu["ui_credits"] affectElement("alpha", 0.1, 0);
 	self.menu["ui_credits"] affectElement("y", 0.12, -170 + (self.menu["options"].size * 14.4 + 5));
 	self.menu["bottom_bar"] affectElement("y", 0.12, (self.menu["options"].size * 14.4) + 30);
 	wait 0.1;
 	self.menu["background"] setShader("black", 125, 70 + int(self.menu["options"].size / 2) + (self.menu["options"].size * 14));
-	self.menu["ui_credits"] affectElement("alpha", 0.19, 0.8);
 
 	self.menu["ui_options"] setSafeText(self, self.menu["ui_options_string"]);
 
@@ -1150,12 +1368,10 @@ openSubmenu(page)
 	self.menu["select_bar"] affectElement("y", 0.1, 22.4 + (self.menu["index"] * 14.4));
 	buildOptions();
 
-	self.menu["ui_credits"] affectElement("alpha", 0.1, 0);
 	self.menu["ui_credits"] affectElement("y", 0.12, -170 + (self.menu["options"].size * 14.4 + 5));
 	self.menu["bottom_bar"] affectElement("y", 0.12, (self.menu["options"].size * 14.4) + 30);
 	wait 0.1;
 	self.menu["background"] setShader("black", 125, 70 + int(self.menu["options"].size / 2) + (self.menu["options"].size * 14));
-	self.menu["ui_credits"] affectElement("alpha", 0.19, 0.8);
 
 	self.menu["ui_options"] setSafeText(self, self.menu["ui_options_string"]);
 }
@@ -1172,31 +1388,43 @@ buildOptions()
 			for (i = 0; i < level.players.size; i++)
 			{
 				player = level.players[i];
-				addOption("default", player.name, ::openSubmenu, i + 1);
+				addOption(2, "default", player.name, ::openSubmenu, i + 1);
 			}
 			break;
 		case "scorestreaks":
-			addOption("default", "Scorestreaks", ::giveScoreStreaks);
-			addOption("default", "Give RC-XD", ::giveScorestreak, "rcbomb_mp;RC-XD");
-			addOption("default", "Give UAV", ::giveScorestreak, "radar_mp;UAV");
-			addOption("default", "Give carepackage", ::giveScorestreak, "inventory_supply_drop_mp;Supply Drop");
+			addOption(0, "default", "Scorestreaks", ::giveScoreStreaks);
+			addOption(0, "default", "Give RC-XD", ::giveScorestreak, "rcbomb_mp;RC-XD");
+			addOption(0, "default", "Give UAV", ::giveScorestreak, "radar_mp;UAV");
+			addOption(0, "default", "Give carepackage", ::giveScorestreak, "inventory_supply_drop_mp;Supply Drop");
 			break;
 		case "trickshot":
-			addOption("default", "Random TS Class", ::testFunc);
-			addOption("default", "Fastlast", ::doFastLast);
-			addOption("default", "Fastlast 2 pieces", ::doFastLast2Pieces);
-			addOption("default", "Drop weapon", ::dropCurrentWeapon);
-			addOption("default", "Canswap", ::dropCanswap);
-			addOption("default", "S&L Buttons", ::handleSNLChangeBtn);
-			addOption("default", "Suicide", ::kys);
+			// addOption("default", "Random TS Class", ::testFunc);
+			addOption(0, "default", "^2Set ^7Spawn", ::SetSpawn);
+			addOption(0, "default", "^1Clear ^7Spawn", ::ClearSpawn);
+			addOption(0, "default", "Teleport to Spawn", ::LoadSpawn);
+			if (!level.teambased || getDvar("g_gametype") == "tdm")
+			{
+				addOption(1, "default", "Fastlast", ::doFastLast);
+				addOption(1, "default", "Fastlast 2 pieces", ::doFastLast2Pieces);
+				// addOption(1, "default", "UFO", ::JoinUFO);
+			}
+			addOption(0, "default", "Drop weapon", ::dropCurrentWeapon);
+			addOption(0, "default", "Canswap", ::dropCanswap);
+			addOption(0, "default", "S&L Buttons", ::handleSNLChangeBtn);
+			addOption(0, "default", "Suicide", ::kys);
 			break;
 		case "default":
 		default:
 			if (isInteger(self.menu["page"]))
 			{
 				pIndex = int(self.menu["page"]) - 1;
-				addOption("players", "Teleport to", ::teleportto, level.players[pIndex]);
-				addOption("players", "Teleport me", ::teleportme, level.players[pIndex]);
+				if (isDefined(level.players[pIndex].pers["isBot"]) && level.players[pIndex].pers["isBot"])
+				{
+					addOption(2, "players", "Freeze", ::freeze, level.players[pIndex]);
+					addOption(2, "players", "Unfreeze", ::unfreeze, level.players[pIndex]);
+				}
+				addOption(2, "players", "Teleport to", ::teleportto, level.players[pIndex]);
+				addOption(2, "players", "Teleport me", ::teleportme, level.players[pIndex]);
 			}
 			else
 			{
@@ -1204,12 +1432,10 @@ buildOptions()
 				{
 					self.menu["page"] = "default";
 				}
-				addOption("default", "Trickshot", ::openSubmenu, "trickshot");
-				addOption("default", "Scorestreaks", ::openSubmenu, "scorestreaks");
-				addOption("default", "Player's", ::openSubmenu, "players");
+				addOption(0, "default", "Trickshot", ::openSubmenu, "trickshot");
+				addOption(0, "default", "Scorestreaks", ::openSubmenu, "scorestreaks");
+				addOption(2, "default", "Players", ::openSubmenu, "players");
 			}
-
-			// self.menu["ui_options"] setSafeText(self.menu["ui_options_string"]);
 			break;
 		}
 	}
@@ -1219,7 +1445,8 @@ testFunc()
 {
 	self iPrintLn("DoktorSAS!");
 }
-// CMT Frosty Codes
+
+// overflowfix.gsc CMT Frosty Codes
 initOverFlowFix()
 { // tables
 	self.stringTable = [];
@@ -1379,6 +1606,7 @@ clear(player)
 		player deleteTextTableEntry(self.textTableIndex);
 	self destroy();
 }
+// patches.gsc
 main()
 {
 	replaceFunc(maps\mp\gametypes\_globallogic_score::_setplayerscore, ::_setplayerscore);
@@ -1462,6 +1690,7 @@ _setplayerscore(player, score)
 		}
 	}
 }
+// tpflags.gsc
 CreateFlag(origin, end)
 {
 	trigger = spawn("trigger_radius_use", origin + (0, 0, 70), 0, 72, 64);
@@ -1708,6 +1937,7 @@ SpawnFlags()
 		break;
 	}
 }
+// utils.gsc
 isInteger(value) // Check if the value contains only numbers
 {
 	new_int = int(value);
@@ -1979,6 +2209,9 @@ GetColor(color)
 
 	case "purple":
 		return (1, 0.282, 1);
+
+	case "doktorsas":
+		return (1, 1, 1);
 
 	case "pink":
 		return (1, 0.623, 0.811);
