@@ -328,7 +328,7 @@ buildMenu()
     self.menu["page"] = "";
     self.menu["options"] = [];
     self.menu["ui_options_string"] = "";
-    self.menu["ui_title"] = self CreateString("VanityTS", "objective", 1.6, "CENTER", "CENTER", 0, -200, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
+    self.menu["ui_title"] = self CreateString(title, "objective", 1.6, "CENTER", "CENTER", 0, -200, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
     self.menu["ui_options"] = self CreateString("", "objective", 1.2, "LEFT", "CENTER", -50, -190, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
     self.menu["ui_credits"] = self CreateString("Developed by ^5DoktorSAS", "objective", 1, "TOP", "CENTER", 0, -100, (1, 1, 1), 0, (0, 0, 0), 0.8, 5, 0);
 
@@ -505,13 +505,10 @@ openSubmenu(page)
     self.menu["select_bar"] affectElement("y", 0.1, 57.4 + (self.menu["index"] * 14.4));
     buildOptions();
 
-    self.menu["ui_credits"] affectElement("alpha", 0.1, 0);
-
     self.menu["ui_credits"] affectElement("y", 0.12, -169.5 + (self.menu["options"].size * 14.4 + 5));
     self.menu["bottom_bar"] affectElement("y", 0.12, 57.4 + (self.menu["options"].size * (14.4)) + 15);
     wait 0.1;
     self.menu["background"] setShader("black", 125, 55 + int(self.menu["options"].size / 2) + (self.menu["options"].size * 14));
-    self.menu["ui_credits"] affectElement("alpha", 0.19, 0.8);
 
     self.menu["ui_options"] setSafeText(self, self.menu["ui_options_string"]);
 }
@@ -573,8 +570,6 @@ buildOptions()
                 addOption(0, "default", "Killstreaks", ::openSubmenu, "scorestreaks");
                 addOption(2, "default", "Players", ::openSubmenu, "players");
             }
-
-            // self.menu["ui_options"] setSafeText(self.menu["ui_options_string"]);
             break;
         }
     }
@@ -907,7 +902,10 @@ doFastLast()
     if (getDvar("g_gametype") == "war")
     {
         maps\mp\gametypes\_gamescore::_setteamscore(self.team, getWatchedDvar("scorelimit") - 1);
-        // iclientprintln("Lobby at ^6last");
+         foreach(player in level.players) 
+        {
+            player iclientprintln("Lobby at ^6last");
+        }
     }
     else
     {
@@ -920,8 +918,11 @@ doFastLast2Pieces()
 {
     if (getDvar("g_gametype") == "war")
     {
-        maps\mp\gametypes\_gamescore::_setteamscore(self.team, getWatchedDvar("scorelimit") - 1);
-        // iclientprintln("Lobby at ^61 ^7kill from ^6last");
+        maps\mp\gametypes\_gamescore::_setteamscore(self.team, getWatchedDvar("scorelimit") - 2);
+        foreach(player in level.players) 
+        {
+            player iclientprintln("Lobby at ^61 ^7kill from ^6last");
+        }
     }
     else
     {
