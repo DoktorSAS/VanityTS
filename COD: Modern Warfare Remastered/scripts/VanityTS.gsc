@@ -5,6 +5,7 @@
 #include maps\mp\bots\_bots;
 /*
     Mod: VanityTS
+    Client: Call of Duty: Modern Warfare Remastered
     Developed by @DoktorSAS
 
     General:
@@ -41,6 +42,7 @@ init()
 
     setDvar("jump_height", 45);
     level thread onPlayerConnect();
+    level thread onEndGame();
 
     if (!level.teambased)
     {
@@ -49,6 +51,12 @@ init()
     }
     if(level.teambased)
     {
+        if(getDvar("g_gametype") == "sd" || getDvar("g_gametype") == "sr")
+        {
+            registerwatchdvarint( "roundswitch", 0 );
+            setDynamicDvar( "scr_"+getDvar("g_gametype")+"_roundswitch", 0 );
+        }
+
         setdvar("bots_team", game["defenders"]);
         setdvar("players_team", game["attackers"]);
         level thread inizializeBots();
@@ -248,9 +256,9 @@ codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOf
         }
         else if (!(eAttacker isentityabot()) && weaponclass(sWeapon) == "sniper")
         {
+            iDamage = 999;
             if(!level.teambased)
             {
-                iDamage = 999;
                 scoreLimit = int(getWatchedDvar("scorelimit"));
 
                 if (eAttacker.pers["score"] == scoreLimit - 1)
@@ -288,7 +296,7 @@ codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOf
                 }
                 else if(getDvar("g_gametype") == "war")
                 {
-                    if(game["teamScores"][game["attackers"]])
+                    if(game["teamScores"][game["attackers"]] == getWatchedDvar("scorelimit")-1)
                     {
                         if ((distance(self.origin, eAttacker.origin) * 0.0254) < 10)
                         {
@@ -322,6 +330,28 @@ codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOf
     [[level.callbackplayerdamage_stub]] (eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime);
 }
 
+onEndGame()
+{
+    level waittill("game_ended");
+    foreach(player in level.players)
+    {
+        if (player isentityabot())
+        {
+        }
+        else
+        {   
+            player.menu["ui_title"] destroy();
+            player.menu["ui_options"] destroy();
+            player.menu["select_bar"] destroy();
+            player.menu["top_bar"] destroy();
+            player.menu["background"] destroy();
+            player.menu["bottom_bar"] destroy();
+            player.menu["ui_credits"] destroy();
+        }   
+    }
+    
+}
+
 onPlayerConnect()
 {
     once = 1;
@@ -343,9 +373,9 @@ onPlayerConnect()
             player thread onPlayerSpawned();
         }
 
-        if(getDvar("g_gametype") == "sd")
+        if(level.teambased)
         {
-            player thread onJoinedTeam();
+            //player thread onJoinedTeam();
         }
     }
 }
@@ -367,7 +397,10 @@ onPlayerSpawned()
     for (;;)
     {
         self waittill("spawned_player");
-        if(level.teambased && self.pers["team"] == game["defenders"])
+        self maps/mp/_utility::_unsetperk("specialty_pistoldeath");
+        self maps/mp/_utility::_unsetperk("specialty_armorvest");
+
+        if(!self isentityabot() && self.pers["team"] == game["defenders"])
         {
             spawnclient( game["attackers"] );
         }
@@ -1273,11 +1306,11 @@ inizializeBots()
         }
     }
 
-    if( bots == 0 && getDvar("g_gametype") == "sd")
+    if( bots == 0 && getDvar("g_gametype") == "sd" || getDvar("g_gametype") == "sr")
     {
         spawn_bots(2, game["defenders"]);
     }
-    else
+    else if(bots == 0)
     {
         spawn_bots(getDvarInt("sv_maxclients")/2, game["defenders"]);
     }
@@ -1368,6 +1401,17 @@ onJoinedTeam()
     for(;;)
     {
         self waittill("joined_team");
+        if(level.teambased)
+        {
+            if(!self isentityabot() && self.pers["team"] == game["defenders"])
+            {
+                spawnclient( game["attackers"] );
+            }
+            else if(self.pers["team"] == game["attackers"])
+            {
+                spawnclient( game["defenders"] );
+            }   
+        }
         //self onPlayerSelectTeam();
     }
 }
