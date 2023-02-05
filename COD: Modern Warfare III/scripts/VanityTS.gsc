@@ -1290,7 +1290,7 @@ kickbot()
     {
         if (player isentityabot())
         {
-            cmdexec("bot 1");
+            kick(player getEntityNumber(), "EXE_PLAYERKICKED");
             //player bot_drop();
             break;
         }
