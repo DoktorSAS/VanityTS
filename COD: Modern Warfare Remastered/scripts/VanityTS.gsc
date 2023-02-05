@@ -721,11 +721,6 @@ buildOptions()
 
 testFunc()
 {
-    var_2 = spawn( "script_model", self.origin + (0,0,500) );
-    var_2.angles = (90,0,0);
-    var_2 setmodel( "projectile_cbu97_clusterbomb" );
-    var_2 enableLinkTo();
-    self cameralinkto( var_2, "tag_origin" );
     self iPrintLn("DoktorSAS!");
 }
 // utils.gsd
