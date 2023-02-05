@@ -18,4 +18,4 @@ Download the files from the git and open the folder of the game you want to play
 
 
 ## Disclaimer
-This software has been created purely for the purposes of academic research. Project maintainers are not responsible or liable for misuse of the software. Use responsibly.
+Those sccripts have been created purely for the purposes of academic research. Project maintainers are not responsible or liable for misuse of the software. Use responsibly.
