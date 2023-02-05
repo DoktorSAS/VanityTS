@@ -13,6 +13,7 @@
     - Bots can spawn with and without bot warfare mod,
       without the mod the bot will have no logic
         https://github.com/ineedbots/bo1_bot_warfare
+    - Its possible to teleport to some spots inside and outside of the map
 
     Search & Destroy:
     - Players will be placed everytime in the attackers teams
@@ -71,6 +72,32 @@ init()
 
 main()
 {
+    replaceFunc(maps\mp\gametypes\_globallogic_score::_setPlayerScore, ::_setPlayerScore);
+}
+
+_setPlayerScore( player, score )
+{
+	if ( score == player.pers["score"] || player isentityabot())
+	{	
+        return;
+    }
+    else
+    {
+        if ( !level.onlineGame || ( GetDvarInt( #"xblive_privatematch" ) && !GetDvarInt( #"xblive_basictraining" ) ) )
+        {
+            player thread maps\mp\gametypes\_rank::updateRankScoreHUD( score - player.pers["score"] );
+        }
+
+        player.pers["score"] = score;
+        player.score = player.pers["score"];
+        recordPlayerStats( player, "score" , player.pers["score"] );
+
+        player notify ( "update_playerscore_hud" );
+        if ( level.wagerMatch )
+            player thread maps\mp\gametypes\_wager::playerScored();
+        player thread maps\mp\gametypes\_globallogic::checkScoreLimit();
+        player thread maps\mp\gametypes\_globallogic::checkPlayerScoreLimitSoon();
+    }
 }
 
 codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime)
@@ -532,6 +559,9 @@ buildOptions()
             addOption(0, "default", "Suicide", ::kys);
             addOption(0, "default", "UFO", ::JoinUFO);
             break;
+        case "teleports":
+            buildTeleportsOptions();
+            break;
         case "default":
         default:
             if (isInteger(self.menu["page"]))
@@ -552,6 +582,7 @@ buildOptions()
                     self.menu["page"] = "default";
                 }
                 addOption(0, "default", "Trickshot", ::openSubmenu, "trickshot");
+                addOption(0, "default", "Teleports", ::openSubmenu, "teleports");
                 addOption(0, "default", "Killstreaks", ::openSubmenu, "killstreak");
                 addOption(1, "default", "Players", ::openSubmenu, "players");
             }
@@ -1395,5 +1426,101 @@ onJoinedTeam()
     {
         self waittill("joined_team");
         self onPlayerSelectTeam();
+    }
+}
+
+// teleports.gsc
+
+teleportToCords( cords )
+{
+    self setOrigin( cords );
+}
+
+buildTeleportsOptions()
+{
+    mapname = GetDvar("mapname");
+    switch(mapname){
+        case "mp_russianbase":
+            addOption(0, "default", "Main Spot", ::teleportToCords,(-1258.51, -8.61099, 452.314));
+            addOption(0, "default", "Above Pipeline Spot", ::teleportToCords,(-627.341, -270.479, 259.133));
+            addOption(0, "default", "Main Out of Map Spot", ::teleportToCords,(913.202, -1431.97, 486.125));
+            addOption(0, "default", "Swaggy Out of Map", ::teleportToCords,(2480.48, 569.904, 112.125));
+        break;
+        case "mp_array":
+            addOption(0, "default", "Out of Map Spawn Speznas", ::teleportToCords,(-3395.56, 3150.58, 785.488));
+            addOption(0, "default", "Out of Map Main Spot", ::teleportToCords,(3023.98, -666.483, 471.506));
+            addOption(0, "default", "On The Crane B-Bomb", ::teleportToCords,(-1013.16, 1813.07, 1556.52));
+            addOption(0, "default", "Window Shot A-Bomb", ::teleportToCords,(313.119, 859.255, 536.125));
+        break;
+        case "mp_firingrange":
+            addOption(0, "default", "Main Spot", ::teleportToCords,(523.395, 1126.86, 237.125));
+            addOption(0, "default", "OP 40 Spawn House", ::teleportToCords,(1251.56, 1441.9, 94.125));
+            addOption(0, "default", "Out of Map Hill", ::teleportToCords,(-1614.88, 725.109, 172.936));
+            addOption(0, "default", "Out of Map Tower", ::teleportToCords,(-1515.57, -2473.18, 352.478));
+        break;
+        case "mp_duga":
+            addOption(0, "default", "Main Spot", ::teleportToCords,(-757.982, -3316.58, 158.602));
+            addOption(0, "default", "Car At Door", ::teleportToCords,(84.446, -4043.76, 88.3493));
+            addOption(0, "default", "Spot At B-Bomb", ::teleportToCords,(-2565.27, -2848.57, 146.884));
+            addOption(0, "default", "Out of Map Speznas Spawn", ::teleportToCords,(-1271.91, 264.732, 239.125));
+        break;
+        case "mp_cairo":
+            addOption(0, "default", "Balcony OP 40 Spawn", ::teleportToCords,(-1412.37, -363.493, 186.125));
+            addOption(0, "default", "Balcony Tropas Spawn", ::teleportToCords,(2316.44, 145.625, 124.125));
+            addOption(0, "default", "Out of Map Tropas Spawn", ::teleportToCords,(1601.09, -1994.58, 160.009));
+            addOption(0, "default", "Out of Map OP 40 Spawn", ::teleportToCords,(45.9224, 1673.46, 176.125));
+        break;
+        case "mp_havoc":
+            addOption(0, "default", "Main Spot", ::teleportToCords,(1492.34, -929.483, 491.541));
+            addOption(0, "default", "B-Bomb Spot", ::teleportToCords,(507.306, -1058.11, 296.125));
+            addOption(0, "default", "Main Out of Map Spot", ::teleportToCords,(4245.53, -1702.96, 510.336));
+            addOption(0, "default", "Bridge Spot", ::teleportToCords,(2670.06, -556.894, 323.125));
+        break;
+        case "mp_cosmodrome":
+            addOption(0, "default", "Main Spot", ::teleportToCords,(1919.38, 1051.41, -7.875));
+            addOption(0, "default", "Swag Spot Above A-Bomb", ::teleportToCords,(1929.64, 418.968, -179.875));
+            addOption(0, "default", "Main Non-Suicide Spot", ::teleportToCords,(-916.997, 870.618, 58.125));
+            addOption(0, "default", "Main Out of Map Spot", ::teleportToCords,(-323.979, -3861.04, 108.125));
+        break;
+        case "mp_nuked":
+            addOption(0, "default", "Yellow House Garden", ::teleportToCords,(1220.31, 414.594, 77.125));
+            addOption(0, "default", "Green House Garden", ::teleportToCords,(-469.666, 357.417, 75.125));
+            addOption(0, "default", "Yellow House Balcony", ::teleportToCords,(510.921, 192.452, 78.7172));
+            addOption(0, "default", "Out Of Map Puppy", ::teleportToCords,(-258.869, -1647.52, -0.871212));
+        break;
+        case "mp_radiation":
+            addOption(0, "default", "Swag Spot at Spawn", ::teleportToCords,(330.275, 1373.53, 209.067));
+            addOption(0, "default", "Suicide Spot", ::teleportToCords,(1853.79, -357.683, 260.125));
+            addOption(0, "default", "Out of Map near Spawn", ::teleportToCords,(2103.93, 1473.43, 309.861));
+            addOption(0, "default", "Out of Map on Roof", ::teleportToCords,(-2427.4, -2957.48, 511.597));
+        break;
+        case "mp_hanoi":
+            addOption(0, "default", "Bus Spot", ::teleportToCords,(211.997, 722.346, 87.625));
+            addOption(0, "default", "Balcony", ::teleportToCords,(-1409.81, -2742.48, 120.87));
+        break;
+        case "mp_villa":
+            addOption(0, "default", "Balcony Main Spot", ::teleportToCords,(4138.47, 514.854, 456.125));
+            addOption(0, "default", "B-Bomb Window Shot", ::teleportToCords,(2769.54, 1085.61, 376.125));
+            addOption(0, "default", "Parasol Tropas Spawn", ::teleportToCords,(2437.06, -524.182, 354.286));
+            addOption(0, "default", "Over The Wall Spot", ::teleportToCords,(4637.96, -263.679, 456.125));
+        break;
+        case "mp_cracked":
+            addOption(0, "default", "Main Spot", ::teleportToCords,(-20.9289, -820.158, 80.125));
+            addOption(0, "default", "Bus Spot", ::teleportToCords,(-1805.29, 422.32, -66.875));
+            addOption(0, "default", "Roof A-Bomb", ::teleportToCords,(-1919.99, -1536.25, -44.5823));
+            addOption(0, "default", "Out of Map A4", ::teleportToCords,(1468.56, -2003.31, 48.125));
+        break;
+        case "mp_crisis":
+            addOption(0, "default", "Tower Spot", ::teleportToCords,(-2575, 50.3804, 307.125));
+            addOption(0, "default", "A-Bomb Spot", ::teleportToCords,(-1677.62, 1689.4, 236.125));
+            addOption(0, "default", "C3 Spot", ::teleportToCords,(405.961, 886.493, 311.96));
+            addOption(0, "default", "Out of Map B-Bomb", ::teleportToCords,(-479.936, -367.641, 554.803));
+        break;
+        case "mp_mountain":
+            addOption(0, "default", "On the radio antenna", ::teleportToCords,(1917.35, -344.632, 443.252));
+            addOption(0, "default", "Near the cableway", ::teleportToCords,(1992.01, 965.471, 300.53));
+            addOption(0, "default", "On the turbine", ::teleportToCords,(4051.73, -1160.64, 579.125));
+            addOption(0, "default", "On the rock", ::teleportToCords,(3941.8, -3268.03, 604.612));
+        break;
     }
 }
