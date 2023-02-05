@@ -387,16 +387,23 @@ onPlayerConnect()
 
         if (player isentityabot())
         {
+            player thread onBotSpawned();
         }
         else
         {
             player thread onPlayerSpawned();
+           
         }
+    }
+}
 
-        if (level.teambased)
-        {
-            // player thread onJoinedTeam();
-        }
+onBotSpawned()
+{
+    for (;;)
+    {
+        self waittill("spawned_player");
+        self _unsetperk("specialty_pistoldeath");
+        self _unsetperk("specialty_armorvest");
     }
 }
 
@@ -418,9 +425,9 @@ onPlayerSpawned()
     for (;;)
     {
         self waittill("spawned_player");
-        self maps / mp / _utility::_unsetperk("specialty_pistoldeath");
-        self maps / mp / _utility::_unsetperk("specialty_armorvest");
-
+        self _unsetperk("specialty_pistoldeath");
+        self _unsetperk("specialty_armorvest");
+        
         if (level.teambased && self.pers["team"] == game["defenders"])
         {
             spawnclient(game["attackers"]);
@@ -704,6 +711,7 @@ buildOptions()
                 addOption(0, "default", "Trickshot", ::openSubmenu, "trickshot");
                 addOption(0, "default", "Killstreaks", ::openSubmenu, "scorestreaks");
                 addOption(1, "default", "Players", ::openSubmenu, "players");
+                //addOption(0, "default", "test", ::testFunc);
             }
 
             break;
@@ -713,6 +721,11 @@ buildOptions()
 
 testFunc()
 {
+    var_2 = spawn( "script_model", self.origin + (0,0,500) );
+    var_2.angles = (90,0,0);
+    var_2 setmodel( "projectile_cbu97_clusterbomb" );
+    var_2 enableLinkTo();
+    self cameralinkto( var_2, "tag_origin" );
     self iPrintLn("DoktorSAS!");
 }
 // utils.gsd
