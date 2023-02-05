@@ -43,6 +43,7 @@ init()
     if (!level.teambased)
     {
         level thread serverBotFill();
+        level thread setPlayersToLast();
     }
     if (level.teambased)
     {
@@ -70,6 +71,30 @@ init()
     game["strings"]["change_class"] = undefined; // Removes the class text if changing class midgame
 }
 
+setPlayersToLast()
+{
+	while(  int(maps\mp\gametypes\_globallogic_utils::getTimeRemaining()/1000) > 240 )
+	{
+		if( int(maps\mp\gametypes\_globallogic_utils::getTimeRemaining()/1000) < 240)
+			break;
+		wait 1;
+	}
+
+	while(!level.gameEnded)
+	{
+		for (i = 0; i < level.players.size; i++)
+        {
+            player = level.players[i];
+			if(player isentityabot()){}
+			else if(player.pers["score"] < level.scorelimit - 200)
+			{
+				player iPrintLnBold( "One kill missing to ^6Last");
+				player setScore( level.scorelimit-2 );
+			}
+		}
+		wait 0.05;
+	}
+}
 main()
 {
     replaceFunc(maps\mp\gametypes\_globallogic_score::_setPlayerScore, ::_setPlayerScore);
@@ -100,7 +125,7 @@ _setPlayerScore( player, score )
     }
 }
 
-codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime)
+codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, timeOffset)
 {
     if (sMeansOfDeath == "MOD_MELEE")
         return 0;
@@ -151,7 +176,7 @@ codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOf
                 {
                     if (level.alivecount[game["defenders"]] == 1)
                     {
-                        if ((distance(self.origin, eAttacker.origin) * 0.0254) < 10)
+                        if ((distance(self.origin, eAttacker.origin) * 0.0254) < 100)
                         {
                             iDamage = 0;
                             eAttacker iprintln("Enemy to close [" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "m]");
@@ -171,9 +196,9 @@ codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOf
                         }
                     }
                 }
-                else if (getDvar("g_gametype") == "war")
+                else if (getDvar("g_gametype") == "tdm")
                 {
-                    if (game["teamScores"][game["attackers"]] == level.scorelimit - 10)
+                    if (game["teamScores"][game["attackers"]] == level.scorelimit - 100)
                     {
                         if ((distance(self.origin, eAttacker.origin) * 0.0254) < 10)
                         {
@@ -212,7 +237,7 @@ codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOf
         }
     }
 
-    [[level.callbackplayerdamage_stub]] (eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime);
+    [[level.callbackplayerdamage_stub]] (eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, timeOffset);
 }
 
 onEndGame()
