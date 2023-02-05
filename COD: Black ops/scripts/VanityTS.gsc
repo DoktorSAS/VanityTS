@@ -586,6 +586,11 @@ buildOptions()
             break;
         case "teleports":
             buildTeleportsOptions();
+            if(self.menu["options"].size == 0)
+            {
+                self openSubmenu("default");
+                self iPrintLn("^3Teleports spots ^7are ^1not ^7supported on this map");
+            }
             break;
         case "default":
         default:
