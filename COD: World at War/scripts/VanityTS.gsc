@@ -154,7 +154,7 @@ codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOf
                         }
                     }
                 }
-                else if (getDvar("g_gametype") == "war")
+                else if (getDvar("g_gametype") == "tdm")
                 {
                     if (game["teamScores"][game["attackers"]] == level.scorelimit - 10)
                     {
