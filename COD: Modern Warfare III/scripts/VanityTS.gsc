@@ -83,8 +83,10 @@ init()
 main()
 {
     replaceFunc(maps\mp\killstreaks\_airdrop::addCrateType, ::_addCrateType);
-    replaceFunc(maps\mp\gametypes\_gamescore::giveplayerscore, ::giveplayerscore);
-    
+    if(!level.teambased)
+    {
+        replaceFunc(maps\mp\gametypes\_gamescore::giveplayerscore, ::giveplayerscore);
+    }
 }
 
 giveplayerscore( var_0, var_1, var_2, var_3, var_4 )
