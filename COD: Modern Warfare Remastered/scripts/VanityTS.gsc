@@ -23,6 +23,7 @@
     - Lobby will be filled with bots untill there not enough players
     - The menu will display FFA options such as Fastlast
     - Once miss a miniute from the endgame all players will set to last
+    - Bots can't win
 
     Team deathmatch:
     - Can be played as a normal match untill last or can be instant set at last or one kill from last
@@ -92,6 +93,42 @@ main()
         replacefunc(maps\mp\bots\_bots::bot_gametype_chooses_team, ::bot_gametype_chooses_team);
         replacefunc(maps\mp\gametypes\_menus::watchforteamchange, ::watchforteamchange);
     }
+    replacefunc(maps\mp\gametypes\_gamescore::giveplayerscore, ::giveplayerscore);
+}
+
+giveplayerscore( var_0, player, var_2 )
+{
+    print("giveplayerscore:"+player.name);
+    if ( isdefined( player.owner ) )
+        player = player.owner;
+
+    if ( !isplayer( player ) || player isentityabot())
+        return;
+
+    player maps\mp\gametypes\_gamescore::displaypoints( var_0 );
+    var_3 = player.pers["score"];
+    maps\mp\gametypes\_gamescore::onplayerscore( var_0, player, var_2 );
+    var_4 = player.pers["score"] - var_3;
+
+    if ( var_4 == 0 )
+        return;
+
+    if ( player.pers["score"] < 65535 )
+        player.score = player.pers["score"];
+
+    if ( level.teambased && getDvar("g_gametype") != "war" )
+    {
+        player maps\mp\gametypes\_persistence::statsetchild( "round", "score", player.score );
+        player maps\mp\gametypes\_persistence::statadd( "score", var_4 );
+    }
+
+    if ( !level.teambased )
+    {
+        level thread maps\mp\gametypes\_gamescore::sendupdateddmscores();
+        player maps\mp\gametypes\_gamelogic::checkplayerscorelimitsoon();
+    }
+
+    player maps\mp\gametypes\_gamelogic::checkscorelimit();
 }
 
 menu_give_class_stub()
