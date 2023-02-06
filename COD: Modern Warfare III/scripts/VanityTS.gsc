@@ -7,7 +7,6 @@
     Developed by @DoktorSAS
 
     General:
-    - jump_height increased to 45 from 39
     - It is possible to change class in any moments during the game
     - If you land on ground the shot it will not count
     - The minmum distance to hit a valid shot is 10m
@@ -24,6 +23,7 @@
     - Lobby will be filled with bots untill there not enough players
     - The menu will display FFA options such as Fastlast
     - Once miss a miniute from the endgame all players will set to last
+    - Bots can't win
 
     Team deathmatch:
     - Can be played as a normal match untill last or can be instant set at last or one kill from last
@@ -82,6 +82,58 @@ init()
 
 main()
 {
+    replaceFunc(maps\mp\killstreaks\_airdrop::addCrateType, ::_addCrateType);
+    replaceFunc(maps\mp\gametypes\_gamescore::giveplayerscore, ::giveplayerscore);
+    
+}
+
+giveplayerscore( var_0, var_1, var_2, var_3, var_4 )
+{
+    if(var_1 isentityabot())
+        return;
+
+    if ( !isdefined( var_3 ) )
+        var_3 = 0;
+
+    if ( !isdefined( var_4 ))
+        var_4 = 0;
+
+    var_5 = var_1.pers["score"];
+    maps\mp\gametypes\_gamescore::onplayerscore( var_0, var_1, var_2 );
+
+    if ( var_5 == var_1.pers["score"] )
+        return;
+
+    if ( !var_1 maps\mp\_utility::rankingenabled() && !level.hardcoremode && !var_4 )
+        var_1 thread maps\mp\gametypes\_rank::xppointspopup( var_1.pers["score"] - var_5, 0, ( 0.85, 0.85, 0.85 ), 0 );
+
+    var_1 maps\mp\gametypes\_persistence::statadd( "score", var_1.pers["score"] - var_5 );
+    var_1.score = var_1.pers["score"];
+    var_1 maps\mp\gametypes\_persistence::statsetchild( "round", "score", var_1.score );
+
+    if ( !level.teambased )
+        thread maps\mp\gametypes\_gamescore::sendupdateddmscores();
+
+    if ( !var_3 )
+        var_1 maps\mp\gametypes\_gamelogic::checkplayerscorelimitsoon();
+
+    var_6 = var_1 maps\mp\gametypes\_gamelogic::checkscorelimit();
+}
+
+
+_addCrateType( dropType, crateType, crateWeight, crateFunc )
+{
+    switch(crateType)
+    {
+        case "uav":
+        case "precision_airstrike":
+        case "counter_uav":
+        case "deployable_vest":
+        case "ims":
+            level.crateTypes[dropType][crateType] = crateWeight;
+	        level.crateFuncs[dropType][crateType] = crateFunc;
+        break;
+    }
 
 }
 
@@ -113,6 +165,19 @@ setPlayersToLast()
     }
 }
 
+isSniper( weapon )
+{
+    return ( 
+        isSubstr( weapon, "iw5_dragunov") 
+        ||  isSubstr( weapon, "iw5_msr" ) 
+        ||  isSubstr( weapon, "iw5_barrett" ) 
+        ||  isSubstr( weapon, "iw5_barrett" ) 
+        ||  isSubstr( weapon, "iw5_rsass" ) 
+        ||  isSubstr( weapon, "iw5_as50" ) 
+        ||  isSubstr( weapon, "iw5_l96a1")
+        ||  isSubstr( weapon, "iw5_cheytac")
+    );
+}
 codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime)
 {
     if (sMeansOfDeath == "MOD_MELEE")
@@ -128,7 +193,7 @@ codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOf
         {
             iDamage = iDamage / 4;
         }
-        else if (!(eAttacker isentityabot()) && weaponclass(sWeapon) == "sniper")
+        else if (!(eAttacker isentityabot()) && (weaponclass(sWeapon) == "sniper" || isSniper(sWeapon)))
         {
             iDamage = 999;
             if (!level.teambased)
@@ -246,6 +311,20 @@ onEndGame()
     }
 }
 
+changeClassAnytime()
+{
+    level endon("game_ended");
+    for(;;)
+    {
+        level.inGracePeriod = 1;
+        foreach(player in level.players) 
+        {
+            player.hasDoneCombat = 0;
+        }
+        wait 0.05;
+    }
+    
+}
 onPlayerConnect()
 {
     once = 1;
@@ -256,6 +335,7 @@ onPlayerConnect()
         {
             level.callbackplayerdamage_stub = level.callbackplayerdamage;
             level.callbackplayerdamage = ::codecallback_playerdamagedksas;
+            level thread changeClassAnytime();
             once = 0;
         }
 
@@ -315,7 +395,7 @@ buildMenu()
 {
     title = "VanityTS";
     self.menu = [];
-    self.menu["status"] = 1;
+    self.menu["status"] = 0;
     self.menu["index"] = 0;
     self.menu["page"] = "";
     self.menu["options"] = [];
@@ -1211,7 +1291,8 @@ inizializeBots()
         //spawn_bots(getDvarInt("sv_maxclients") / 2, game["defenders"]);
     }
 }
-onPlayerSelectTeam(){
+onPlayerSelectTeam()
+{
     //  Move the player in the correct team
     if(!self isentityabot() && self.pers["team"] == game["defenders"])
     {
@@ -1232,7 +1313,7 @@ onPlayerSelectTeam(){
 }
 isentityabot()
 {
-    return isSubStr(self getguid(), "bot");
+    return (isDefined(self.pers["isBot"]) && self.pers["isBot"]);
 }
 serverBotFill()
 {
