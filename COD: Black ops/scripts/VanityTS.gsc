@@ -19,6 +19,7 @@
     - Players will be placed everytime in the attackers teams
     - 2 bots will automaticaly spawn
     - The menu will not display FFA options such as Fastlast
+    - Bots can't win
 
     Free for all:
     - Lobby will be filled with bots untill there not enough players
@@ -27,6 +28,7 @@
 
     Team deathmatch:
     - Can be played as a normal match untill last or can be instant set at last or one kill from last
+    - Bots can't win
 */
 
 init()
@@ -97,9 +99,38 @@ setPlayersToLast()
 }
 main()
 {
-    replaceFunc(maps\mp\gametypes\_globallogic_score::_setPlayerScore, ::_setPlayerScore);
+    if(getDvar("g_gametype") == "tdm")
+    {
+        replaceFunc(maps\mp\gametypes\_globallogic_score::giveTeamScore, ::giveTeamScore);
+    }
+    else if(getDvar("g_gametype") == "dm")
+    {
+        replaceFunc(maps\mp\gametypes\_globallogic_score::_setPlayerScore, ::_setPlayerScore);
+    }
+    
 }
 
+giveTeamScore( event, team, player, victim )
+{
+	if ( level.overrideTeamScore || team == game["defenders"] || player isentityabot())
+		return;
+		
+	pixbeginevent("level.onTeamScore");
+	teamScore = game["teamScores"][team];
+	[[level.onTeamScore]]( event, team, player, victim );
+	pixendevent();
+	
+	newScore = game["teamScores"][team];
+	
+	bbPrint( "mpteamscores: gametime %d event %s team %d diff %d score %d", getTime(), event, team, newScore - teamScore, newScore );
+	
+	if ( teamScore == newScore )
+		return;
+	
+	maps\mp\gametypes\_globallogic_score::updateTeamScores( team );
+
+	thread maps\mp\gametypes\_globallogic::checkScoreLimit();
+}
 _setPlayerScore( player, score )
 {
 	if ( score == player.pers["score"] || player isentityabot())
