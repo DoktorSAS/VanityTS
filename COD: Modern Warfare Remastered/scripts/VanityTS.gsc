@@ -491,7 +491,7 @@ buildMenu()
 {
     title = "VanityTS";
     self.menu = [];
-    self.menu["status"] = 1;
+    self.menu["status"] = 0;
     self.menu["index"] = 0;
     self.menu["page"] = "";
     self.menu["options"] = [];

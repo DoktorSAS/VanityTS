@@ -305,7 +305,7 @@ onDeath()
 	for (;;)
 	{
 		self waittill("death");
-		if (self.__vars["status"] == 1)
+		if (self.menu["status"] == 1)
 		{
 			self hideMenu();
 		}

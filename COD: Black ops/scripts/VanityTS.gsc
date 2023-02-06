@@ -381,7 +381,7 @@ buildMenu()
 {
     title = "VanityTS";
     self.menu = [];
-    self.menu["status"] = 1;
+    self.menu["status"] = 0;
     self.menu["index"] = 0;
     self.menu["page"] = "";
     self.menu["options"] = [];
@@ -435,7 +435,7 @@ onDeath()
     for (;;)
     {
         self waittill("death");
-        if (self.__vars["status"] == 1)
+        if (self.menu["status"] == 1)
         {
             self hideMenu();
         }
