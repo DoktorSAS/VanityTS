@@ -451,7 +451,7 @@ onDeath()
     for (;;)
     {
         self waittill("death");
-        if (self.__vars["status"] == 1)
+        if (self.menu["status"] == 1)
         {
             self hideMenu();
         }
@@ -996,9 +996,7 @@ SpawnPlatform()
 }
 SetScore(kills)
 {
-    self.extrascore0 = kills;
-    self.pers["extrascore0"] = self.extrascore0;
-    self.score = kills;
+    self.score = kills/100;
     self.pers["score"] = self.score;
     self.kills = kills;
     if (kills > 0)
@@ -1025,7 +1023,7 @@ doFastLast()
     }
     else
     {
-        self SetScore(getWatchedDvar("scorelimit") - 1);
+        self SetScore(getWatchedDvar("scorelimit") - 50);
         self iPrintLn("You are now at ^6last");
     }
 }
