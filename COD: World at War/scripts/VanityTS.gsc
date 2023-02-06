@@ -23,9 +23,11 @@
     - Lobby will be filled with bots untill there not enough players
     - The menu will display FFA options such as Fastlast
     - Once miss a miniute from the endgame all players will set to last
+    - Bots can't end the game
 
     Team deathmatch:
     - Can be played as a normal match untill last or can be instant set at last or one kill from last
+    - Bots can't end the game
 */
 
 init()
@@ -106,7 +108,30 @@ setPlayersToLast()
 }
 main()
 {
-    replaceFunc(maps\mp\gametypes\_globallogic::givePlayerScore, ::givePlayerScore);
+    if(getDvar("g_gametype") == "tdm")
+    {
+        replaceFunc(maps\mp\gametypes\_globallogic::giveTeamScore, ::giveTeamScore);
+    }
+    else if(getDvar("g_gametype") == "dm")
+    {
+        replaceFunc(maps\mp\gametypes\_globallogic::givePlayerScore, ::givePlayerScore);
+    }
+}
+
+giveTeamScore( event, team, player, victim )
+{
+	if ( level.overrideTeamScore || team == game["defenders"] || player isentityabot())
+		return;
+		
+	teamScore = game["teamScores"][team];
+	[[level.onTeamScore]]( event, team, player, victim );
+	
+	if ( teamScore == game["teamScores"][team] )
+		return;
+	
+	maps\mp\gametypes\_globallogic::updateTeamScores( team );
+
+	thread maps\mp\gametypes\_globallogic::checkScoreLimit();
 }
 
 givePlayerScore( event, player, victim )
@@ -944,7 +969,7 @@ SetScore(score)
 {
     self.score = score;
     self.pers["score"] = self.score;
-    self.kills = score/5;
+    self.kills = int(score/5);
     if (score > 0)
     {
         self.deaths = randomInt(11) * 2;
