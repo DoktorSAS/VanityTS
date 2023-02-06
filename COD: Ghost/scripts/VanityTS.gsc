@@ -23,9 +23,11 @@
     - Lobby will be filled with bots untill there not enough players
     - The menu will display FFA options such as Fastlast
     - Once miss a miniute from the endgame all players will set to last
+    - Bots can't win
 
     Team deathmatch:
     - Can be played as a normal match untill last or can be instant set at last or one kill from last
+    - Bots can't win
 */
 
 init()
@@ -146,7 +148,7 @@ codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOf
 
         if (eAttacker isentityabot() && !self isentityabot())
         {
-            iDamage = iDamage / 4;
+            iDamage = int(iDamage / 6);
         }
         else if (!(eAttacker isentityabot()) && weaponclass(sWeapon) == "sniper")
         {
@@ -157,7 +159,6 @@ codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOf
 
                 if (eAttacker.pers["score"] == scoreLimit - 1)
                 {
-
                     if ((distance(self.origin, eAttacker.origin) * 0.0254) < 10)
                     {
                         iDamage = 0;
@@ -172,7 +173,7 @@ codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOf
                     {
                         foreach (player in level.players)
                         {
-                            player iclientprintln("[^5" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "^7m]");
+                            player iprintln("[^5" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "^7m]");
                         }
                     }
                 }
@@ -197,7 +198,7 @@ codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOf
                         {
                             foreach (player in level.players)
                             {
-                                player iclientprintln("[^5" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "^7m]");
+                                player iprintln("[^5" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "^7m]");
                             }
                         }
                     }
@@ -221,7 +222,7 @@ codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOf
                     {
                         foreach (player in level.players)
                         {
-                            player iclientprintln("[^5" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "^7m]");
+                            player iprintln("[^5" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "^7m]");
                         }
                     }
                 }
