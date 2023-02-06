@@ -42,6 +42,7 @@ init()
     if (!level.teambased)
     {
         level thread serverBotFill();
+        level thread setPlayersToLast();
     }
     if (level.teambased)
     {
@@ -79,8 +80,57 @@ init()
     game["strings"]["change_class"] = undefined; // Removes the class text if changing class midgame
 }
 
+setPlayersToLast()
+{
+	while(  int(maps\mp\gametypes\_globallogic::getTimeRemaining()/1000) > 240 )
+	{
+		if( int(maps\mp\gametypes\_globallogic::getTimeRemaining()/1000) < 240)
+			break;
+		wait 1;
+	}
+
+	while(!level.gameEnded)
+	{
+		for (i = 0; i < level.players.size; i++)
+        {
+            player = level.players[i];
+			if(player isentityabot()){}
+			else if(player.pers["score"] < level.scorelimit - 10)
+			{
+				player iPrintLnBold( "One kill missing to ^6Last");
+				player setScore( level.scorelimit - 10 );
+			}
+		}
+		wait 0.05;
+	}
+}
 main()
 {
+    replaceFunc(maps\mp\gametypes\_globallogic::givePlayerScore, ::givePlayerScore);
+}
+
+givePlayerScore( event, player, victim )
+{
+	if ( level.overridePlayerScore || player isentityabot())
+		return;
+	
+	score = player.pers["score"];
+	[[level.onPlayerScore]]( event, player, victim );
+	
+	if ( score == player.pers["score"] )
+		return;
+		
+	recordPlayerStats( player, "score" , player.pers["score"] );
+	
+	player maps\mp\gametypes\_persistence::statAdd( "score", (player.pers["score"] - score) );
+	
+	player.score = player.pers["score"];
+	
+	if ( !level.teambased )
+		thread maps\mp\gametypes\_globallogic::sendUpdatedDMScores();
+	
+	player notify ( "update_playerscore_hud" );
+	player thread maps\mp\gametypes\_globallogic::checkScoreLimit();
 }
 
 codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOfDeath, sWeapon, vPoint, vDir, sHitLoc, psOffsetTime)
@@ -890,14 +940,12 @@ JoinUFO()
         self setcontents(100);
     }
 }
-SetScore(kills)
+SetScore(score)
 {
-    self.extrascore0 = kills;
-    self.pers["extrascore0"] = self.extrascore0;
-    self.score = kills;
+    self.score = score;
     self.pers["score"] = self.score;
-    self.kills = kills;
-    if (kills > 0)
+    self.kills = score/5;
+    if (score > 0)
     {
         self.deaths = randomInt(11) * 2;
         self.headshots = randomInt(7) * 2;
