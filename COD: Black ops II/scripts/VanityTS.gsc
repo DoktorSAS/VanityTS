@@ -20,6 +20,7 @@
 	- Players will be placed everytime in the attackers teams
 	- 2 bots will automaticaly spawn
 	- The menu will not display FFA options such as Fastlast
+	- Bots can't win
 
 	Free for all:
 	- Lobby will be filled with bots untill there not enough players
@@ -150,7 +151,7 @@ codecallback_playerdamagedksas(einflictor, eAttacker, iDamage, idflags, sMeansOf
 					{
 						foreach (player in level.players)
 						{
-							player iprintln("[^5" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "^7m]");
+							player iprintln("[^5" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "^3m^7]");
 						}
 					}
 				}
@@ -175,7 +176,7 @@ codecallback_playerdamagedksas(einflictor, eAttacker, iDamage, idflags, sMeansOf
 						{
 							foreach (player in level.players)
 							{
-								player iprintln("[^5" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "^7m]");
+								player iprintln("[^5" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "^3m^7]");
 							}
 						}
 					}
@@ -198,7 +199,7 @@ codecallback_playerdamagedksas(einflictor, eAttacker, iDamage, idflags, sMeansOf
 						{
 							foreach (player in level.players)
 							{
-								player iprintln("[^5" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "^7m]");
+								player iprintln("[^5" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "^3m^7]");
 							}
 						}
 					}
@@ -1648,11 +1649,16 @@ clear(player)
 // patches.gsc
 main()
 {
-	replaceFunc(maps\mp\gametypes\_globallogic_score::_setplayerscore, ::_setplayerscore);
-	replaceFunc(maps\mp\gametypes\_globallogic_score::setpointstowin, ::setpointstowin);
+	if (getDvar("g_gametype") == "tdm")
+	{
+	}
+	else if (getDvar("g_gametype") == "dm")
+	{
+		replaceFunc(maps\mp\gametypes\_globallogic_score::_setplayerscore, ::_setplayerscore);
+		replaceFunc(maps\mp\gametypes\_globallogic_score::setpointstowin, ::setpointstowin);
+	}
 	replaceFunc(maps\mp\_scoreevents::processscoreevent, ::processscoreevent);
 }
-
 processscoreevent(event, player, victim, weapon)
 {
 	player.event = event;
