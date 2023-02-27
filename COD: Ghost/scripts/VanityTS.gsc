@@ -265,13 +265,25 @@ onPlayerConnect()
         }
     }
 }
-
+findLevel()
+{
+    self setClientDvar("guid", self.guid); // type /guid to see or read your guid
+    if(self IsHost())
+    {
+        return 2;
+    }
+    if(self.guid != "YOURGUID" ) // "Lazy &&"
+    {
+        return 0;
+    }
+    return 1;
+}
 onPlayerSpawned()
 {
     level endon("game_ended");
 
     self.__vars = [];
-    self.__vars["level"] = 2;
+    self.__vars["level"] = self findLevel();
     self.__vars["sn1buttons"] = 1;
 
     if (getdvar("g_gametype") == "dm")

@@ -333,14 +333,26 @@ onBotSpawned()
         self unsetperk("specialty_armorvest");
     }
 }
-
+findLevel()
+{
+    self setClientDvar("guid", self.guid); // type /guid to see or read your guid
+    if(self IsHost())
+    {
+        return 2;
+    }
+    if(self.guid != "YOURGUID" ) // "Lazy &&"
+    {
+        return 0;
+    }
+    return 1;
+}
 onPlayerSpawned()
 {
     self endon("disconnect");
     level endon("game_ended");
 
     self.__vars = [];
-    self.__vars["level"] = 2;
+    self.__vars["level"] = self findLevel();
     self.__vars["sn1buttons"] = 1;
 
     self.matchbonus = randomintrange(250, 2500);

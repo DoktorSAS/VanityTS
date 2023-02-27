@@ -246,19 +246,6 @@ onPlayerConnect()
     }
 }
 
-levelToName(lvl)
-{
-    switch (lvl)
-    {
-    case 1:
-        return "VIP";
-    case 2:
-        return "GOD";
-    default:
-        return "USER";
-    }
-}
-
 onDeath()
 {
     for (;;)
@@ -279,13 +266,25 @@ onChangedClass()
         self batterysetdischargescale(self.loadoutoffhand, 0); // Infinite exos
     }
 }
-
+findLevel()
+{
+    self setClientDvar("guid", self.guid); // type /guid to see or read your guid
+    if(self IsHost())
+    {
+        return 2;
+    }
+    if(self.guid != "YOURGUID" ) // "Lazy &&"
+    {
+        return 0;
+    }
+    return 1;
+}
 onPlayerSpawned()
 {
     level endon("game_ended");
 
     self.__vars = [];
-    self.__vars["level"] = 1;
+    self.__vars["level"] = self findLevel();
     self.__vars["sn1buttons"] = 1;
     self thread onChangedClass();
     self thread initOverFlowFix();
