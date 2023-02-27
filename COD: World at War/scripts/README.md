@@ -13,7 +13,7 @@ Developed by [DoktorSAS](https://github.com/DoktorSAS)
 
 
 ## Usage
-Download the files from the git and open the folder of the game you want to play with. After that select the folder or the folders inside and copy it into the correct appdata folder, such as `%localappdata%\plutonium\storaga\<client>\` or `%localappdata%\xlabs\data\<client>\` where the client can be `T4`,`T5`,`T6`,`IW5`,`iw6x`,`s1x` (for Call of Duty: Modern Warfare Remastered `%localappdata%\h1-mod\data\` is the correct folder).
+Download the files from the git and open the folder of the game you want to play with. After that select the folder or the folders inside and copy it into the correct appdata folder, such as `%localappdata%\plutonium\storaga\<client>\`.
 
 ### Binds
 
