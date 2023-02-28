@@ -1,5 +1,5 @@
 
-# VanityTS - Call of Duty: World at War
+# VanityTS - Call of Duty: Black ops II
 Developed by [DoktorSAS](https://github.com/DoktorSAS)
 
 ## Supported Features
