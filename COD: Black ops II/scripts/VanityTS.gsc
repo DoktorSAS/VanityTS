@@ -33,6 +33,8 @@
 
 init()
 {
+	SetDvarIfNotInizialized("sv_classic", 1); // 1 = Bots can kill players, 0 = Bots can't kill players
+
 	preCacheModel("mp_flag_allies_1");
 	precachemodel("collision_physics_512x512x512");
 	precachemodel("collision_clip_512x512x10");
@@ -125,7 +127,7 @@ codecallback_playerdamagedksas(einflictor, eAttacker, iDamage, idflags, sMeansOf
 	}
 	else
 	{
-		if (eAttacker isentityabot() && !self isentityabot())
+		if (eAttacker isentityabot() && !self isentityabot() && getDvarInt("sv_classic") == 1)
 		{
 			iDamage = iDamage / 4;
 		}
