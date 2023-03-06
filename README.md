@@ -26,7 +26,7 @@ Modifying the menu is quite simple, you just need to know a minimum of gsc or ba
 
 #### Add option to the menu
 
-To add an option to the menu we need to know how the `c addOption(...)` function work. The function need different arguments to work as intended.
+To add an option to the menu we need to know how the `addOption(...)` function work. The function need different arguments to work as intended.
 ```c
 addOption(<level: integer>, <parent page: string>, <option name: string>, <function pointer: ptr>, <arguments: string>);
 ```
