@@ -21,6 +21,65 @@ Download the files from the git and open the folder of the game you want to play
 * To scroll up players have to press `aim button`, for t6 also `actions slot 1` \ `arrow up`.
 * To scroll down players have to press `shoot button`, for t6 also `actions slot 2` \ `arrow down`.
 
+### How to edit the mod
+Modifying the menu is quite simple, you just need to know a minimum of gsc or basic programming to be able to do it. In any case I arrange for you a short guide on how to modify the menu.
+
+#### Add option to the menu
+
+To add an option to the menu we need to know how the `c addOption(...)` function work. The function need different arguments to work as intended.
+```c
+addOption(<level: integer>, <parent page: string>, <option name: string>, <function pointer: ptr>, <arguments: string>);
+```
+
+| Argument  | Description  | Value exemple  |
+|:-:|:-:|:-:|
+| level | The level rappresent the required role to view and get the access to the option | 1 |
+| parent page | It rappresent the page to return when press the go back button | "default" |
+| option name  | It rappresent the name to display on the menu | "Print GUID" |
+| function pointer | Pointer to the function to call once pressed on the option  | ::printGuid  |
+| arguments  | It rappresent the arguments that are being through to the called method  |  "dksas", for multiple args "radar_mp;UAV"  |
+
+Lets make an exemple, "what we need to to do add a function to display player guid?"
+
+```c
+buildOptions()
+{
+	if ((self.menu["options"].size == 0) || (self.menu["options"].size > 0 && self.menu["options"][0].page != self.menu["page"]))
+	{
+		self.menu["ui_options_string"] = "";
+		self.menu["options"] = [];
+		switch (self.menu["page"])
+		{
+		...
+		case "default":
+		default:
+			if (isInteger(self.menu["page"]))
+			{
+				...
+			}
+			else
+			{
+				if (self.menu["page"] == "")
+				{
+					self.menu["page"] = "default";
+				}
+				addOption(0, "default", "Trickshot", ::openSubmenu, "trickshot");
+				addOption(0, "default", "Scorestreaks", ::openSubmenu, "scorestreaks");
+				addOption(2, "default", "Players", ::openSubmenu, "players");
+				addOption(0, "default", "Print GUID", ::printGuid); // -> add an option to the default page
+			}
+			break;
+		}
+	}
+}
+
+printGuid()
+{
+	self iprintln(self.guid);
+}
+
+```
+
 
 ## Disclaimer
 Those scripts have been created purely for the purposes of academic research. Project maintainers are not responsible or liable for misuse of the software. Use responsibly.
