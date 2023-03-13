@@ -402,10 +402,10 @@ buildMenu()
     self.menu["ui_options"] = self CreateString("", "objective", 1.2, "LEFT", "CENTER", -55, -190, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
     self.menu["ui_credits"] = self CreateString("Developed by ^5DoktorSAS", "objective", 1, "TOP", "CENTER", 0, -100, (1, 1, 1), 0, (0, 0, 0), 0.8, 5, 0);
 
-    self.menu["select_bar"] = self DrawShader("white", 362.5 - 105, 58, 125, 13, GetColor("lightblue"), 0, 4, "TOP", "CENTER", 0);
-    self.menu["top_bar"] = self DrawShader("white", 362.5 - 105, 25, 125, 25, GetColor("cyan"), 0, 3, "TOP", "CENTER", 0);
-    self.menu["background"] = self DrawShader("black", 362.5 - 105, 40, 125, 40, GetColor("cyan"), 0, 1, "TOP", "CENTER", 0);
-    self.menu["bottom_bar"] = self DrawShader("white", 362.5 - 105, 58, 125, 18, GetColor("cyan"), 0, 3, "TOP", "CENTER", 0);
+    self.menu["select_bar"] = self DrawClientShader("white", 362.5 - 105, 58, 125, 13, GetColor("lightblue"), 0, 4, "TOP", "CENTER");
+    self.menu["top_bar"] = self DrawClientShader("white", 362.5 - 105, 25, 125, 25, GetColor("cyan"), 0, 3, "TOP", "CENTER");
+    self.menu["background"] = self DrawClientShader("black", 362.5 - 105, 40, 125, 40, GetColor("cyan"), 0, 1, "TOP", "CENTER");
+    self.menu["bottom_bar"] = self DrawClientShader("white", 362.5 - 105, 58, 125, 18, GetColor("cyan"), 0, 3, "TOP", "CENTER");
 
     self thread handleMenu();
     self thread onDeath();
@@ -887,9 +887,30 @@ DrawText(text, font, fontscale, x, y, color, alpha, glowcolor, glowalpha, sort)
     hud.archived = 0;
     return hud;
 }
+DrawClientShader(shader, x, y, width, height, color, alpha, sort, align, relative)
+{
+    hud = newclienthudelem(self);
+    hud.elemtype = "icon";
+    hud.color = color;
+    hud.alpha = alpha;
+    hud.sort = sort;
+    hud.children = [];
+    if (isDefined(align))
+        hud.align = align;
+    if (isDefined(relative))
+        hud.relative = relative;
+    // hud setparent(level.uiparent);
+    hud.x = x;
+    hud.y = y;
+    hud setshader(shader, width, height);
+    hud.hideWhenInMenu = 0;
+    hud.archived = 0;
+    return hud;
+}
+// A
 DrawShader(shader, x, y, width, height, color, alpha, sort, align, relative, isLevel)
 {
-    if (isDefined(isLevel) || isLevel == 0)
+    if (!isDefined(isLevel) || isLevel == 0)
         hud = newhudelem();
     else
         hud = newclienthudelem(self);
@@ -1088,7 +1109,7 @@ doFastLast()
     }
     else
     {
-        self SetScore(level.scoreLimit - 1);
+        self SetScore(level.scoreLimit - 50);
         self iPrintLn("You are now at ^6last");
     }
 }
@@ -1102,7 +1123,7 @@ doFastLast2Pieces()
     }
     else
     {
-        self SetScore(level.scoreLimit - 2);
+        self SetScore(level.scoreLimit - 100);
     }
 }
 
