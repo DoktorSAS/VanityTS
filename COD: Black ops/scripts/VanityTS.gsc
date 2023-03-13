@@ -178,7 +178,7 @@ codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOf
             {
                 scoreLimit = level.scorelimit;
 
-                if (eAttacker.pers["score"] == scoreLimit - 5)
+                if (eAttacker.pers["score"] == scoreLimit - 50)
                 {
 
                     if ((distance(self.origin, eAttacker.origin) * 0.0254) < 10)
