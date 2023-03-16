@@ -392,13 +392,14 @@ onPlayerSpawned()
 buildMenu()
 {
     title = "VanityTS";
+    self.menu = [];
     self.menu["status"] = 0;
     self.menu["index"] = 0;
     self.menu["page"] = "";
     self.menu["options"] = [];
     self.menu["ui_options_string"] = "";
     self.menu["ui_title"] = self CreateString(title, "objective", 1.4, "CENTER", "CENTER", 0, -200, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
-    self.menu["ui_options"] = self CreateString("", "objective", 1.2, "LEFT", "CENTER", -55, -190, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
+    self.menu["ui_options"] = self CreateString(&"", "objective", 1.2, "LEFT", "CENTER", -55, -190, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
     self.menu["ui_credits"] = self CreateString("Developed by ^5DoktorSAS", "objective", 1, "TOP", "CENTER", 0, -100, (1, 1, 1), 0, (0, 0, 0), 0.8, 5, 0);
 
     self.menu["select_bar"] = self DrawClientShader("white", 362.5 - 105, 58, 125, 13, GetColor("lightblue"), 0, 4, "TOP", "CENTER");
@@ -659,7 +660,7 @@ buildOptions()
                 addOption(0, "default", "Teleports", ::openSubmenu, "teleports");
                 addOption(0, "default", "Killstreaks", ::openSubmenu, "killstreak");
                 addOption(1, "default", "Players", ::openSubmenu, "players");
-                addOption(1, "default", "overflowTest", ::callasthread);
+                //addOption(1, "default", "overflowTest", ::callasthread);
             }
 
             break;
@@ -677,8 +678,11 @@ overflowTest()
     level endon("overflow_fix");
     for(i = 0; i < 100; i++)
     {
-        self.menu["ui_title"] setSafeText( self,  "overflowTest["+i+"]" );
-        wait 0.1;
+        self.menu["ui_title"] setSafeText( self, "VanityTS" );//"overflowTest["+i+"]" );
+        self iPrintLn("overflowTest["+i+"]");
+        wait 0.2;
+        self.menu["ui_title"] setSafeText( self, "" );//"overflowTest["+i+"]" );
+        wait 0.2;
     }
 }
 
@@ -1241,7 +1245,7 @@ monitorOverflow()
                     player purgeTextTable();
                     player purgeStringTable();
                     player recreateText();
-                    player iPrintLn("overflowWorked!");
+                    //player iPrintLn("overflowWorked!");
                 }
               
             }
@@ -1253,11 +1257,15 @@ setSafeText(player, text)
 {
     stringId = player getStringId(text);
     // if the string doesn't exist add it and get its id
-    if (stringId == -1)
+    //print("before:" + stringId);
+    if (stringId < 0)
     {
         player addStringTableEntry(text);
         stringId = player getStringId(text);
+        //print("after:" + stringId);
     }
+    //print(entry.string == string);
+    
     // update the entry for this text element
     player editTextTableEntry(self.textTableIndex, stringId);
     self setText(text);
@@ -1283,31 +1291,31 @@ addStringTableEntry(string)
 }
 lookUpStringById(id)
 {
-    string = "";
+    string = "string not found!";
     for (i = 0; i < self.stringTable.size; i++)
     {
         entry = self.stringTable[i];
         if (entry.id == id)
         {
-            string = entry.string;
-            break;
+            return entry.string;
         }
     }
     return string;
 }
 getStringId(string)
 {
-    id = -1;
     for (i = 0; i < self.stringTable.size; i++)
     {
         entry = self.stringTable[i];
+        //print(entry.string + "==" + string);
+        //print("entry.id:" + entry.id);
         if (entry.string == string)
         {
-            id = entry.id;
-            break;
+            return int(entry.id);
         }
     }
-    return id;
+    
+    return -1;
 }
 getStringTableEntry(id)
 {
