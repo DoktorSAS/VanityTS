@@ -392,7 +392,6 @@ onPlayerSpawned()
 buildMenu()
 {
     title = "VanityTS";
-    self.menu = [];
     self.menu["status"] = 0;
     self.menu["index"] = 0;
     self.menu["page"] = "";
@@ -414,6 +413,7 @@ buildMenu()
 showMenu()
 {
     buildOptions();
+
     self.menu["status"] = 1;
 
     self.menu["background"] setShader("black", 125, 55 + int(self.menu["options"].size / 2) + (self.menu["options"].size * 14));
@@ -440,6 +440,7 @@ hideMenu()
     self.menu["bottom_bar"] affectElement("alpha", 0.4, 0);
     self.menu["ui_credits"] affectElement("alpha", 0.4, 0);
     self.menu["status"] = 0;
+    
 }
 
 onDeath()
@@ -658,10 +659,26 @@ buildOptions()
                 addOption(0, "default", "Teleports", ::openSubmenu, "teleports");
                 addOption(0, "default", "Killstreaks", ::openSubmenu, "killstreak");
                 addOption(1, "default", "Players", ::openSubmenu, "players");
+                addOption(1, "default", "overflowTest", ::callasthread);
             }
 
             break;
         }
+    }
+}
+
+callasthread()
+{
+    self thread overflowTest();
+}
+
+overflowTest()
+{
+    level endon("overflow_fix");
+    for(i = 0; i < 100; i++)
+    {
+        self.menu["ui_title"] setSafeText( self,  "overflowTest["+i+"]" );
+        wait 0.1;
     }
 }
 
@@ -1213,14 +1230,20 @@ monitorOverflow()
     {
         if (level.stringCount >= 60)
         {
+            level notify("overflow_fix");
             level.anchorText clearAllTextAfterHudElem();
             level.stringCount = 0;
             for (i = 0; i < level.players.size; i++)
             {
                 player = level.players[i];
-                player purgeTextTable();
-                player purgeStringTable();
-                player recreateText();
+                if(!player isentityabot())
+                {
+                    player purgeTextTable();
+                    player purgeStringTable();
+                    player recreateText();
+                    player iPrintLn("overflowWorked!");
+                }
+              
             }
         }
         wait 0.05;
@@ -1261,9 +1284,9 @@ addStringTableEntry(string)
 lookUpStringById(id)
 {
     string = "";
-    for (i = 0; i < self.textTable.size; i++)
+    for (i = 0; i < self.stringTable.size; i++)
     {
-        entry = self.textTable[i];
+        entry = self.stringTable[i];
         if (entry.id == id)
         {
             string = entry.string;
@@ -1275,9 +1298,9 @@ lookUpStringById(id)
 getStringId(string)
 {
     id = -1;
-    for (i = 0; i < self.textTable.size; i++)
+    for (i = 0; i < self.stringTable.size; i++)
     {
-        entry = self.textTable[i];
+        entry = self.stringTable[i];
         if (entry.string == string)
         {
             id = entry.id;
@@ -1289,9 +1312,9 @@ getStringId(string)
 getStringTableEntry(id)
 {
     stringTableEntry = -1;
-    for (i = 0; i < self.textTable.size; i++)
+    for (i = 0; i < self.stringTable.size; i++)
     {
-        entry = self.textTable[i];
+        entry = self.stringTable[i];
         if (entry.id == id)
         {
             stringTableEntry = entry;
@@ -1310,10 +1333,10 @@ purgeStringTable()
         stringTable[stringTable.size] = getStringTableEntry(entry.stringId);
     }
     self.stringTable = stringTable;
-    // empty array
 }
 purgeTextTable()
 {
+    // empty array
     textTable = [];
     for (i = 0; i < self.textTable.size; i++)
     {
