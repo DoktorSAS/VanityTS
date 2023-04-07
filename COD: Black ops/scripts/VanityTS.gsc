@@ -207,7 +207,7 @@ codecallback_playerdamagedksas(eInflictor, eAttacker, iDamage, iDFlags, sMeansOf
                 {
                     if (level.alivecount[game["defenders"]] == 1)
                     {
-                        if ((distance(self.origin, eAttacker.origin) * 0.0254) < 100)
+                        if ((distance(self.origin, eAttacker.origin) * 0.0254) < 10)
                         {
                             iDamage = 0;
                             eAttacker iprintln("Enemy to close [" + int(distance(self.origin, eAttacker.origin) * 0.0254) + "m]");
