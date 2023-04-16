@@ -4,7 +4,7 @@ The VanityTS is a trickshot gamemode mod ported over multiple clients and games.
 
 ## Supported Games
 - **T4** *(Call of Duty: World at War)* `PC`
-- **T4** *(Call of Duty: Black Ops)* `PC`
+- **T5** *(Call of Duty: Black Ops)* `PC`
 - **T6** *(Call of Duty: Black Ops II)* `PC`
 - **IW5** *(Call of Duty: Modern Warfare III)* `PC` 
 - **IW6** *(Call of Duty: Ghosts)* `PC` 
