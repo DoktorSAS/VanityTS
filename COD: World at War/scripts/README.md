@@ -13,7 +13,7 @@ Developed by [DoktorSAS](https://github.com/DoktorSAS)
 
 
 ## Usage
-Download the files from the git and open the folder of the game you want to play with. After that select the folder or the folders inside and copy it into the correct appdata folder, such as `%localappdata%\plutonium\storaga\<client>\`.
+Download the files from the git and open the folder of the game you want to play with. After that select the folder or the folders inside and copy it into the correct appdata folder, such as `%localappdata%\plutonium\storaga\t4\`.
 
 ### Binds
 

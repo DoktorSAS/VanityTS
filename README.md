@@ -6,13 +6,15 @@ The VanityTS is a trickshot gamemode mod ported over multiple clients and games.
 - **T4** *(Call of Duty: World at War)* `PC`
 - **T5** *(Call of Duty: Black Ops)* `PC`
 - **T6** *(Call of Duty: Black Ops II)* `PC`
+- **T7** *(Call of Duty: Black ops III)* `PC` 
 - **IW5** *(Call of Duty: Modern Warfare III)* `PC` 
 - **IW6** *(Call of Duty: Ghosts)* `PC` 
 - **S1** *(Call of Duty: Advanced Warfare)* `PC` 
 - **H1** *(Call of Duty: Modern Warfare Remastered)* `PC` 
 
+
 ## Usage
-Download the files from the git and open the folder of the game you want to play with. After that select the folder or the folders inside and copy it into the correct appdata folder, such as `%localappdata%\plutonium\storaga\<client>\` or `%localappdata%\xlabs\data\<client>\` where the client can be `T4`,`T5`,`T6`,`IW5`,`iw6x`,`s1x` (for Call of Duty: Modern Warfare Remastered `%localappdata%\h1-mod\data\` is the correct folder).
+Download the files from the git and open the folder of the game you want to play with. After that select the folder or the folders inside and copy it into the correct appdata folder, such as `%localappdata%\plutonium\storaga\<client>\` or `%localappdata%\xlabs\data\<client>\` where the client can be `T4`,`T5`,`T6`,`IW5`,`iw6x`,`s1x` (for Call of Duty: Modern Warfare Remastered `%localappdata%\h1-mod\data\` is the correct folder) while for `T7` put the compiled file in `BOIII Game Folder\BOIII\scripts\maps\mp\gametypes\` or put the `mp_vanityts` into the mods folder
 
 ### Binds
 

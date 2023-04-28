@@ -9,13 +9,13 @@ Developed by [DoktorSAS](https://github.com/DoktorSAS)
 | `Autobots` | Bots will spawn and kick based on the player in the lobby. It support `Search & Destroy`, `Free For All`, `Team Deathmatch` | ✔️ |
 | `Bot's end games` |  Bots can't end the game, the score made by the bots will be ignored to prevent unespected endgame (It only support `Free For All`) | ❌ |
 | `Prevent bad trickshot` | Trickshots in which the player hits the ground or is too close to the enemy will be considered invalid, the shot will not be counted, and the game will not end. | ✔️ |
-| `Custom trikshot spots` | It add new position around the map where to land and try trickshot | ✔️ |
+| `Custom trickshot spots` | It add new position around the map where to land and try trickshot | ✔️ |
 | `Teleport flags` | Most of the maps have teleport flags to go on new spots outisde the map | ✔️ |
 | `BotWarfare compatibility` | The mod can be used with and without [BotWarfare](https://github.com/ineedbots/pt6_bot_warfare) | ✔️ |
 
 
 ## Usage
-Download the files from the git and open the folder of the game you want to play with. After that select the folder or the folders inside and copy it into the correct appdata folder, such as `%localappdata%\plutonium\storaga\<client>\`.
+Download the files from the git and open the folder of the game you want to play with. After that select the folder or the folders inside and copy it into the correct appdata folder, such as `%localappdata%\plutonium\storaga\t6\`.
 
 ### Binds
 
