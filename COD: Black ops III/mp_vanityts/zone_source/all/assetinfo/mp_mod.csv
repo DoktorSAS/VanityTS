@@ -1,0 +1,6 @@
+index,type,name,resident,streamed,parentStack
+1,string,,0,0,||assetlist
+2,scriptparsetree,scripts/mp/gametypes/_clientids.gsc,29555,0,|zone_source/mp_mod.zone|csv
+3,rawfile,dummy.cfg,14,0,|zone_source/mp_mod.zone|csv
+4,keyvaluepairs,mp_mod,1114,0,||assetlist
+5,assetlist,,48,0,
