@@ -11,7 +11,7 @@ Developed by [DoktorSAS](https://github.com/DoktorSAS)
 | `Prevent bad trickshot` | Trickshots in which the player hits the ground or is too close to the enemy will be considered invalid, the shot will not be counted, and the game will not end. | ✔️ |
 
 ## Usage
-Download the files from the git and open the folder of the game you want to play with. After that select the folder or the folders inside and copy it into the correct appdata folder, such as `%localappdata%\h1-mod\data\`.
+Download the files from the git and open the folder of the game you want to play with. After that select the folder or the folders inside and copy it into the correct appdata folder, such as `%localappdata%\h1-mod\data\cdata\`.
 
 ### Binds
 
