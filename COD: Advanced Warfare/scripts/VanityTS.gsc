@@ -600,7 +600,7 @@ testFunc()
 {
     self iclientprintln("DoktorSAS!");
 }
-// utils.gsd
+// utils.gsc
 
 isInteger(value) // Check if the value contains only numbers
 {
