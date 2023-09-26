@@ -321,7 +321,7 @@ findLevel()
     {
         return 2;
     }
-    if(self.guid != "YOURGUID" ) // "Lazy &&"
+    if(self.guid != "YOUR GUID AS NUMERIC" || self getguid() == "YOUR GUID AS HEX STRING") // Exemple:  if(self.guid != 222673 || self getguid() == "365D1") 
     {
         return 0;
     }
