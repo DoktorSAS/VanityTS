@@ -314,18 +314,31 @@ onBotSpawned()
 		}
 	}
 }
-findLevel()
+
+checkGuid( guid_as_decimal, guid_as_hexdecimal)
 {
-    self setClientDvar("guid", self.guid); // type /guid to see or read your guid
-    if(self IsHost())
-    {
-        return 2;
-    }
-    if(self.guid != "YOUR GUID AS NUMERIC" || self getguid() == "YOUR GUID AS HEX STRING") // Exemple:  if(self.guid != 222673 || self getguid() == "365D1") 
+    if ( (isDefined(guid_as_decimal) && self.guid != guid_as_decimal) 
+        ||
+        (isDefined(guid_as_hexdecimal) && self getguid() != guid_as_hexdecimal))
     {
         return 0;
     }
     return 1;
+}
+
+findLevel()
+{
+    // The logic for the rank system is based on the lazy-and
+    self setClientDvar("guid", self.guid); // type /guid to see or read your guid
+    if(self IsHost())
+    {
+        return 2; // Host level
+    }
+    if(checkGuid(222673, "365D1") ) // Exemple:  checkGuid(222673, "365D1") to add a new value put && after it and call again checkGuid with your new values
+    {
+        return 0; // User level
+    }
+    return 1; // VIP level
 }
 onPlayerSpawned()
 {
