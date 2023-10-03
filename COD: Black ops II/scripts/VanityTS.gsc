@@ -1555,8 +1555,8 @@ changeMap( mapid )
 	setDvar("ui_preview_map", mapid);
 	setDvar("ui_showmap", mapid);
 
-	SetDvar("sv_maprotationcurrent", "map " + map_id);
-	SetDvar("sv_maprotation", "map " + map_id);
+	SetDvar("sv_maprotationcurrent", "map " + mapid);
+	SetDvar("sv_maprotation", "map " + mapid);
 
 	map( mapid, true );
 	//exitlevel( 0 );
