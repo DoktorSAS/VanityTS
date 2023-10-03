@@ -1468,6 +1468,44 @@ buildOptions()
 			addOption(0, "default", "S&L Buttons", ::handleSNLChangeBtn);
 			addOption(0, "default", "Suicide", ::kys);
 			break;
+		case "dlcmaps":
+			mapsdata = getMapsData();
+			addOption(2, "maps", "Nuketown 2025", ::changeMap, mapsdata["mp_nuketown_2020"].mapid);
+			addOption(2, "maps", "Downhill", ::changeMap, mapsdata["mp_downhill"].mapid);
+			addOption(2, "maps", "Mirage", ::changeMap, mapsdata["mp_mirage"].mapid);
+			addOption(2, "maps", "Hydro", ::changeMap, mapsdata["mp_hydro"].mapid);
+			addOption(2, "maps", "Grind", ::changeMap, mapsdata["mp_skate"].mapid);
+			addOption(2, "maps", "Encore", ::changeMap, mapsdata["mp_concert"].mapid);
+			addOption(2, "maps", "Magma", ::changeMap, mapsdata["mp_magma"].mapid);
+			addOption(2, "maps", "Vertigo", ::changeMap, mapsdata["mp_vertigo"].mapid);
+			addOption(2, "maps", "Studio", ::changeMap, mapsdata["mp_studio"].mapid);
+			addOption(2, "maps", "Uplink", ::changeMap, mapsdata["mp_uplink"].mapid);
+			addOption(2, "maps", "Detour", ::changeMap, mapsdata["mp_bridge"].mapid);
+			addOption(2, "maps", "Cove", ::changeMap, mapsdata["mp_castaway"].mapid);
+			addOption(2, "maps", "Rush", ::changeMap, mapsdata["mp_dig"].mapid);
+			addOption(2, "maps", "Frost", ::changeMap, mapsdata["mp_frostbite"].mapid);
+			addOption(2, "maps", "Pod", ::changeMap, mapsdata["mp_pod"].mapid);
+			addOption(2, "maps", "Takeoff", ::changeMap, mapsdata["mp_takeoff"].mapid);
+			break;
+		case "maps":
+			mapsdata = getMapsData();
+			addOption(2, "default", "DLC", ::openSubmenu, "dlcmaps");
+			addOption(2, "default", "Aftermath", ::changeMap, mapsdata["mp_la"].mapid);
+			addOption(2, "default", "Meltdown", ::changeMap, mapsdata["mp_meltdown"].mapid);
+			addOption(2, "default", "Overflow", ::changeMap, mapsdata["mp_overflow"].mapid);
+			addOption(2, "default", "Plaza", ::changeMap, mapsdata["mp_nightclub"].mapid);
+			addOption(2, "default", "Cargo", ::changeMap, mapsdata["mp_dockside"].mapid);
+			addOption(2, "default", "Carrier", ::changeMap, mapsdata["mp_carrier"].mapid);
+			addOption(2, "default", "Drone", ::changeMap, mapsdata["mp_drone"].mapid);
+			addOption(2, "default", "Express", ::changeMap, mapsdata["mp_express"].mapid);
+			addOption(2, "default", "Hijacked", ::changeMap, mapsdata["mp_hijacked"].mapid);
+			addOption(2, "default", "Raid", ::changeMap, mapsdata["mp_raid"].mapid);
+			addOption(2, "default", "Slums", ::changeMap, mapsdata["mp_slums"].mapid);
+			addOption(2, "default", "Standoff", ::changeMap, mapsdata["mp_village"].mapid);
+			addOption(2, "default", "Turbine", ::changeMap, mapsdata["mp_turbine"].mapid);
+			addOption(2, "default", "Yemen", ::changeMap, mapsdata["mp_socotra"].mapid);
+			addOption(2, "default", "Cargo", ::changeMap, mapsdata["mp_dockside"].mapid);
+			break;
 		case "default":
 		default:
 			if (isInteger(self.menu["page"]))
@@ -1490,12 +1528,39 @@ buildOptions()
 				addOption(0, "default", "Trickshot", ::openSubmenu, "trickshot");
 				addOption(0, "default", "Scorestreaks", ::openSubmenu, "scorestreaks");
 				addOption(2, "default", "Players", ::openSubmenu, "players");
+				addOption(2, "default", "Maps", ::openSubmenu, "maps");
 			}
 			break;
 		}
 	}
 }
 
+changeMap( mapid )
+{
+	// Do not work on private matches
+	IPrintLn("Changing map in ^3" + mapid + " ^7in 3 sec");
+	wait 0.2;
+	IPrintLn("Changing in ^33^7!");
+	wait 1;
+	IPrintLn("Changing in ^32^7!");
+	wait 1;
+	IPrintLn("Changing in ^31^7!");
+	wait 1;
+	setDvar("ls_mapname", mapid);
+	setDvar("mapname", mapid);
+	setDvar("party_mapname", mapid);
+	setDvar("ui_mapname", mapid);
+	setDvar("ui_currentMap", mapid);
+	setDvar("ui_mapname", mapid);
+	setDvar("ui_preview_map", mapid);
+	setDvar("ui_showmap", mapid);
+
+	SetDvar("sv_maprotationcurrent", "map " + map_id);
+	SetDvar("sv_maprotation", "map " + map_id);
+
+	map( mapid, true );
+	//exitlevel( 0 );
+}
 testFunc()
 {
 	self iPrintLn("DoktorSAS!");
@@ -2094,14 +2159,9 @@ gametypeToName(gametype)
 	return "invalid";
 }
 
-getMapsData(mapsIDs)
+getMapsData()
 {
 	mapsdata = [];
-
-	/*foreach(id in mapsIDs)
-	{
-		mapsdata[id] = spawnStruct();
-	}*/
 
 	mapsdata["mp_la"] = spawnStruct();
 	mapsdata["mp_la"].mapname = "Aftermath";
