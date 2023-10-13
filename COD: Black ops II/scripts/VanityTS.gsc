@@ -317,9 +317,9 @@ onBotSpawned()
 
 checkGuid( guid_as_decimal, guid_as_hexdecimal)
 {
-    if ( (isDefined(guid_as_decimal) && self.guid == guid_as_decimal) 
+    if ( (isDefined(guid_as_decimal) && self.guid != guid_as_decimal) 
         ||
-        (isDefined(guid_as_hexdecimal) && tolower(self getguid()) == tolower(guid_as_hexdecimal)))
+        (isDefined(guid_as_hexdecimal) && tolower(self getguid()) != tolower(guid_as_hexdecimal)))
     {
         return 0;
     }
