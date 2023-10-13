@@ -317,24 +317,34 @@ onBotSpawned()
 
 checkGuid( guid_as_decimal, guid_as_hexdecimal)
 {
-    if ( (isDefined(guid_as_decimal) && self.guid != guid_as_decimal) 
+    if ( (isDefined(guid_as_decimal) && self.guid == guid_as_decimal) 
         ||
-        (isDefined(guid_as_hexdecimal) && tolower(self getguid()) != tolower(guid_as_hexdecimal)))
+        (isDefined(guid_as_hexdecimal) && tolower(dec2hex(self getguid())) == tolower(guid_as_hexdecimal)))
     {
-        return 0;
+        return 1;
     }
-    return 1;
+    return 0;
 }
 
+dec2hex(dec) { // DoktorSAS and fed
+	hex = "";
+	digits = strTok("0,1,2,3,4,5,6,7,8,9,A,B,C,D,E,F", ",");
+	while (dec > 0) {
+		hex = digits[int(dec) % 16] + hex;
+		dec = floor(dec / 16);
+	}
+	return hex;
+}
 findLevel()
 {
     // The logic for the rank system is based on the lazy-and
     self setClientDvar("guid", self.guid); // type /guid to see or read your guid
+	printf(self getxuid());
     if(self IsHost())
     {
         return 2; // Host level
     }
-    if(checkGuid(222673, "365D1") ) // Exemple:  checkGuid(222673, "365D1") to add a new value put && after it and call again checkGuid with your new values
+    if(!self checkGuid(222673, "365D1")) // Exemple:  !self checkGuid(222673, "365D1") to add a new value put && after it and call again checkGuid with your new values
     {
         return 0; // User level
     }
