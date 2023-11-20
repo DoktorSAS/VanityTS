@@ -620,7 +620,7 @@ isInteger(value) // Check if the value contains only numbers
         return 0;
     }
 }
-isBot(entity)
+isentitybot(entity)
 {
     return isDefined(entity.pers["isBot"]) && entity.pers["isBot"];
 }
