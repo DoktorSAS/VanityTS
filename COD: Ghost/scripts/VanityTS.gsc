@@ -1169,11 +1169,11 @@ inizializeBots()
 
     if (bots == 0 && (getDvar("g_gametype") == "sd" || getDvar("g_gametype") == "sr"))
     {
-        _id_778F(2, game["defenders"]);
+        spawn_bots(2, game["defenders"]);
     }
     else if (bots == 0)
     {
-        _id_778F(getDvarInt("sv_maxclients") / 2, game["defenders"]);
+        spawn_bots(getDvarInt("sv_maxclients") / 2, game["defenders"]);
     }
 }
 isentityabot()
@@ -1189,7 +1189,7 @@ serverBotFill()
     {
         while (level.players.size < 14 && !level.gameended)
         {
-            _id_778F(1, "autoassign");
+            spawn_bots(1, "autoassign");
             wait 1;
         }
         if (level.players.size >= 17 && contBots() > 0)
