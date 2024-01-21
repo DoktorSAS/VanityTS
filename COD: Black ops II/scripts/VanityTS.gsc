@@ -616,11 +616,6 @@ CreateCollision(origin, angles, model)
 	collision setContents(1);
 	collision thread DestroyOnEndGame();
 }
-DestroyOnEndGame()
-{
-	level waittill("game_ended");
-	self delete ();
-}
 CustomCollisions()
 {
 	switch (getDvar("mapname"))
@@ -1840,11 +1835,6 @@ CreateFlag(origin, end)
 	teleport thread DestroyOnEndGame();
 	// level.__vars["flags"]++;
 }
-DestroyOnEndGame()
-{
-	level waittill("game_ended");
-	self delete ();
-}
 IsPlayerOnLast()
 {
 	return (self.pers["pointstowin"] >= level.scorelimit - 1 || self.pers["pointstowin"] >= level.scorelimit - 2);
@@ -2333,6 +2323,11 @@ getMapsData()
 	mapsdata["mp_dockside"].mapid = "mp_dockside";
 	mapsdata["mp_dockside"].image = "loadscreen_mp_dockside";
 	return mapsdata;
+}
+DestroyOnEndGame()
+{
+	level waittill("game_ended");
+	self delete ();
 }
 isValidColor(value)
 {
