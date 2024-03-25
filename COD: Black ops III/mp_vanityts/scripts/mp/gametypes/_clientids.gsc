@@ -492,10 +492,10 @@ function buildMenu()
 	self.menu["ui_options"] = self CreateString("", "objective", 1.2, "LEFT", "CENTER", -40+250, -190, (1, 1, 1), 0, (0, 0, 0), 0.5, 5);
 	self.menu["ui_credits"] = self CreateString("^7Menu by @^3DoktorSAS", "objective", 1, "CENTER", "CENTER", 0+250, -100, (1, 1, 1), 0, (0, 0, 0), 0.8, 5);
 
-	self.menu["select_bar"] = self DrawShader("white", 250, 22.4+36, 125, 13, GetColor("lightblue"), 0, 4, "TOP", "TOP", 0);
-	self.menu["top_bar"] = self DrawShader("white", 250, -10+36, 125, 25, GetColor("cyan"), 0, 3, "TOP", "TOP", 0);
-	self.menu["background"] = self DrawShader("black", 250, -20+40, 125, 40, GetColor("cyan"), 0, 1, "TOP", "TOP", 0);
-	self.menu["bottom_bar"] = self DrawShader("white", 250, -20+40, 125, 18, GetColor("cyan"), 0, 3, "TOP", "TOP", 0);
+	self.menu["select_bar"] = self DrawShader("white", 250, 22.4+36, 125, 13, GetColor("lightblue"), 0, 4, "TOP", "TOP");
+	self.menu["top_bar"] = self DrawShader("white", 250, -10+36, 125, 25, GetColor("cyan"), 0, 3, "TOP", "TOP");
+	self.menu["background"] = self DrawShader("black", 250, -20+40, 125, 40, GetColor("cyan"), 0, 1, "TOP", "TOP");
+	self.menu["bottom_bar"] = self DrawShader("white", 250, -20+40, 125, 18, GetColor("cyan"), 0, 3, "TOP", "TOP");
 
 	self.menu["ui_title"].alpha = 0;
 	self.menu["ui_options"].alpha = 0;
