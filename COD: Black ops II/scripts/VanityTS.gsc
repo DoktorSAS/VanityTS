@@ -1252,10 +1252,10 @@ buildMenu()
 	self.menu["ui_options"] = self CreateString("", "objective", 1.2, "LEFT", "CENTER", -40, -190, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
 	self.menu["ui_credits"] = self CreateString("Developed by ^5DoktorSAS", "objective", 1, "CENTER", "CENTER", 0, -100, (1, 1, 1), 0, (0, 0, 0), 0.8, 5, 0);
 
-	self.menu["select_bar"] = self DrawShader("white", 0, 22.4, 125, 13, GetColor("lightblue"), 0, 4, "TOP", "TOP", 0);
-	self.menu["top_bar"] = self DrawShader("white", 0, -10, 125, 25, GetColor("cyan"), 0, 3, "TOP", "TOP", 0);
-	self.menu["background"] = self DrawShader("black", 0, -20, 125, 40, GetColor("cyan"), 0, 1, "TOP", "TOP", 0);
-	self.menu["bottom_bar"] = self DrawShader("white", 0, -20, 125, 18, GetColor("cyan"), 0, 3, "TOP", "TOP", 0);
+	self.menu["select_bar"] = self DrawShader("white", 0, 22.4, 125, 13, GetColor("lightblue"), 0, 4, "TOP", "TOP");
+	self.menu["top_bar"] = self DrawShader("white", 0, -10, 125, 25, GetColor("cyan"), 0, 3, "TOP", "TOP");
+	self.menu["background"] = self DrawShader("black", 0, -20, 125, 40, GetColor("cyan"), 0, 1, "TOP", "TOP");
+	self.menu["bottom_bar"] = self DrawShader("white", 0, -20, 125, 18, GetColor("cyan"), 0, 3, "TOP", "TOP");
 
 	self thread handleMenu();
 	self thread onDeath();
