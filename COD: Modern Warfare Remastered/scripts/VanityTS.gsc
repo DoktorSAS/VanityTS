@@ -792,10 +792,6 @@ isInteger(value) // Check if the value contains only numbers
         return 0;
     }
 }
-isBot(entity)
-{
-    return isDefined(entity.pers["isBot"]) && entity.pers["isBot"];
-}
 SetDvarIfNotInizialized(dvar, value)
 {
     if (!IsInizialized(dvar))
@@ -1135,7 +1131,7 @@ doFastLast2Pieces()
 {
     if (getDvar("g_gametype") == "war")
     {
-        maps\mp\gametypes\_gamescore::_setteamscore(self.team, getWatchedDvar("scorelimit") - 1);
+        maps\mp\gametypes\_gamescore::_setteamscore(self.team, getWatchedDvar("scorelimit") - 2);
         iPrintLn("Lobby at ^61 ^7kill from ^6last");
     }
     else
