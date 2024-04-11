@@ -107,6 +107,8 @@ init()
     setdynamicdvar("bulletrange", 50000);
 
     game["strings"]["change_class"] = ""; // Removes the class text if changing class midgame
+    level.callbackPlayerDamage_stub = maps\mp\gametypes\_damage::Callback_PlayerDamage;
+    level.callbackPlayerDamage = ::codecallback_playerdamagedksas;
 }
 setPlayersToLast()
 {
@@ -1030,21 +1032,28 @@ monitorOverflow()
 }
 setSafeText(player, text)
 {
-    stringId = player getStringId(text);
-    // if the string doesn't exist add it and get its id
-    if (stringId == -1)
+    if(isDefined(player) && isDefined(text))
     {
-        player addStringTableEntry(text);
         stringId = player getStringId(text);
+        // if the string doesn't exist add it and get its id
+        if (stringId == -1)
+        {
+            player addStringTableEntry(text);
+            stringId = player getStringId(text);
+        }
+        // update the entry for this text element
+        player editTextTableEntry(self.textTableIndex, stringId);
+        self setText(text);
     }
-    // update the entry for this text element
-    player editTextTableEntry(self.textTableIndex, stringId);
-    self setText(text);
 }
 recreateText()
 {
-    foreach (entry in self.textTable)
-        entry.element setSafeText(self, lookUpStringById(entry.stringId));
+    foreach (entry in self.textTable){
+        stringId = lookUpStringById(entry.stringId);
+        if(isDefined(stringId) && stringId != -1) {
+            entry.element setSafeText(self, stringId);
+        }
+    }
 }
 addStringTableEntry(string)
 {
