@@ -106,7 +106,7 @@ init()
     setdynamicdvar("bullet_penetrationMinFxDist", 1024);
     setdynamicdvar("bulletrange", 50000);
 
-    game["strings"]["change_class"] = undefined; // Removes the class text if changing class midgame
+    game["strings"]["change_class"] = ""; // Removes the class text if changing class midgame
 }
 setPlayersToLast()
 {
@@ -330,7 +330,7 @@ buildMenu()
     self.menu["ui_options"] = self CreateString("", "objective", 1.2, "LEFT", "CENTER", -50, -190, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
     self.menu["ui_credits"] = self CreateString("Developed by ^5DoktorSAS", "objective", 1, "TOP", "CENTER", 0, -100, (1, 1, 1), 0, (0, 0, 0), 0.8, 5, 0);
 
-    self.menu["select_bar"] = self DrawShader("white", 362.5 - 105, 57.4, 125, 13, GetColor("lightblue"), 0, 4, "TOP", "CENTER",);
+    self.menu["select_bar"] = self DrawShader("white", 362.5 - 105, 57.4, 125, 13, GetColor("lightblue"), 0, 4, "TOP", "CENTER");
     self.menu["top_bar"] = self DrawShader("white", 362.5 - 105, 25, 125, 25, GetColor("cyan"), 0, 3, "TOP", "CENTER");
     self.menu["background"] = self DrawShader("black", 362.5 - 105, 40, 125, 40, GetColor("cyan"), 0, 1, "TOP", "CENTER");
     self.menu["bottom_bar"] = self DrawShader("white", 362.5 - 105, 57.4, 125, 18, GetColor("cyan"), 0, 3, "TOP", "CENTER");
@@ -607,10 +607,10 @@ isInteger(value) // Check if the value contains only numbers
         return 0;
     }
 }
-isBot(entity)
+/*isBot(entity)
 {
     return isDefined(entity.pers["isBot"]) && entity.pers["isBot"];
-}
+}*/
 SetDvarIfNotInizialized(dvar, value)
 {
     if (!IsInizialized(dvar))
