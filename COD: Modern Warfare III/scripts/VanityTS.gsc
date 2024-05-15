@@ -31,6 +31,8 @@
 
 init()
 {
+    game["strings"]["menutitle"] = "VanityTS";
+    game["strings"]["menucredits"] = "Developed by DoktorSAS";
     level thread onPlayerConnect();
     level thread onEndGame();
 
@@ -78,15 +80,15 @@ init()
     setdynamicdvar("bulletrange", 50000);
 
     game["strings"]["change_class"] = undefined; // Removes the class text if changing class midgame
+    if(!level.teambased)
+    {
+        replaceFunc(maps\mp\gametypes\_gamescore::giveplayerscore, ::giveplayerscore);
+    }
 }
 
 main()
 {
     replaceFunc(maps\mp\killstreaks\_airdrop::addCrateType, ::_addCrateType);
-    if(!level.teambased)
-    {
-        replaceFunc(maps\mp\gametypes\_gamescore::giveplayerscore, ::giveplayerscore);
-    }
 }
 
 giveplayerscore( var_0, var_1, var_2, var_3, var_4 )
@@ -341,10 +343,7 @@ onPlayerConnect()
             once = 0;
         }
 
-        if (player isentityabot())
-        {
-        }
-        else
+        if(!player isentityabot())
         {
             player thread onPlayerSpawned();
         }
@@ -376,14 +375,16 @@ onPlayerSpawned()
     self.__vars = [];
     self.__vars["level"] = self findLevel();
     self.__vars["sn1buttons"] = 1;
+    self.spawn_origin = undefined;
+    self.spawn_angles = undefined;
 
     if (getdvar("g_gametype") == "dm")
     {
         self thread kickBotOnJoin();
     }
 
+    //self initOverFlowFix();
     self buildMenu();
-    self thread initOverFlowFix();
 
     once = 1;
     for (;;)
@@ -407,16 +408,15 @@ onPlayerSpawned()
 // menu.gsc
 buildMenu()
 {
-    title = "VanityTS";
     self.menu = [];
     self.menu["status"] = 0;
     self.menu["index"] = 0;
     self.menu["page"] = "";
     self.menu["options"] = [];
     self.menu["ui_options_string"] = "";
-    self.menu["ui_title"] = self CreateString(title, "objective", 1.4, "CENTER", "CENTER", 0, -200, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
+    self.menu["ui_title"] = self CreateString(game["strings"]["menutitle"], "objective", 1.4, "CENTER", "CENTER", 0, -200, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
     self.menu["ui_options"] = self CreateString("", "objective", 1.2, "LEFT", "CENTER", -55, -190, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
-    self.menu["ui_credits"] = self CreateString("Developed by ^5DoktorSAS", "objective", 0.8, "TOP", "CENTER", 0, -100, (1, 1, 1), 0, (0, 0, 0), 0.8, 5, 0);
+    self.menu["ui_credits"] = self CreateString(game["strings"]["menucredits"], "objective", 0.8, "TOP", "CENTER", 0, -100, (1, 1, 1), 0, (0, 0, 0), 0.8, 5, 0);
 
     self.menu["select_bar"] = self DrawShader("white", 362.5 - 105, 58, 125, 13, GetColor("lightblue"), 0, 4, "TOP", "CENTER");
     self.menu["top_bar"] = self DrawShader("white", 362.5 - 105, 25, 125, 25, GetColor("cyan"), 0, 3, "TOP", "CENTER");
@@ -703,10 +703,6 @@ isInteger(value) // Check if the value contains only numbers
         return 0;
     }
 }
-isBot(entity)
-{
-    return isDefined(entity.pers["isBot"]) && entity.pers["isBot"];
-}
 SetDvarIfNotInizialized(dvar, value)
 {
     if (!IsInizialized(dvar))
@@ -822,14 +818,17 @@ GetColor(color)
 // Drawing
 CreateString(input, font, fontScale, align, relative, x, y, color, alpha, glowColor, glowAlpha, sort, isLevel, isValue)
 {
-    if (!isDefined(isLevel) || isLevel == 0)
-        hud = self createFontString(font, fontScale);
-    else
+    hud = undefined;
+    if (isDefined(isLevel) && isLevel == 1)
         hud = level createServerFontString(font, fontScale);
-    if (!isDefined(isValue) || isValue == 0)
-        hud setSafeText(self, input);
     else
+        hud = self createFontString(font, fontScale);
+        
+    if (isDefined(isValue) && isValue == 1)
         hud setValue(input);
+    else
+        hud setSafeText(self, input);
+        
     hud setPoint(align, relative, x, y);
     hud.color = color;
     hud.alpha = alpha;
@@ -903,26 +902,31 @@ DrawText(text, font, fontscale, x, y, color, alpha, glowcolor, glowalpha, sort)
 }
 DrawShader(shader, x, y, width, height, color, alpha, sort, align, relative, isLevel)
 {
-    if (isDefined(isLevel) || isLevel == 0)
+    hud = undefined;
+    if (isDefined(isLevel) && isLevel == 1) {
         hud = newhudelem();
-    else
+    } else {
         hud = newclienthudelem(self);
-    hud.elemtype = "icon";
-    hud.color = color;
-    hud.alpha = alpha;
-    hud.sort = sort;
-    hud.children = [];
-    if (isDefined(align))
-        hud.align = align;
-    if (isDefined(relative))
-        hud.relative = relative;
-    // hud setparent(level.uiparent);
-    hud.x = x;
-    hud.y = y;
-    hud setshader(shader, width, height);
-    hud.hideWhenInMenu = 0;
-    hud.archived = 0;
-    return hud;
+    }
+    if(isDefined(hud)) {
+        hud.elemtype = "icon";
+        hud.color = color;
+        hud.alpha = alpha;
+        hud.sort = sort;
+        hud.children = [];
+        if (isDefined(align))
+            hud.align = align;
+        if (isDefined(relative))
+            hud.relative = relative;
+        // hud setparent(level.uiparent);
+        hud.x = x;
+        hud.y = y;
+        hud setshader(shader, width, height);
+        hud.hideWhenInMenu = 0;
+        hud.archived = 0;
+        return hud;
+    }
+    return;
 }
 // Animations
 affectElement(type, time, value)
@@ -1008,9 +1012,9 @@ SpawnPlatform()
 }
 SetScore(kills)
 {
-    self.score = kills/100;
-    self.pers["score"] = self.score;
-    self.kills = kills;
+    self.kills = int(kills/50);
+    self.pers["score"] = kills;
+    self.score = self.pers["score"];
     if (kills > 0)
     {
         self.deaths = randomInt(11) * 2;
@@ -1024,6 +1028,7 @@ SetScore(kills)
     self.pers["kills"] = self.kills;
     self.pers["deaths"] = self.deaths;
     self.pers["headshots"] = self.headshots;
+    self IPrintLn(self.pers["score"]);
 }
 
 doFastLast()
@@ -1155,28 +1160,35 @@ monitorOverflow()
 }
 setSafeText(player, text)
 {
-    stringId = player getStringId(text);
-    // if the string doesn't exist add it and get its id
-    if (stringId == -1)
-    {
-        player addStringTableEntry(text);
-        stringId = player getStringId(text);
-    }
-    // update the entry for this text element
-    player editTextTableEntry(self.textTableIndex, stringId);
     self setText(text);
+    /*if(isDefined(player) && isDefined(text)) 
+    {
+        stringId = player getStringId(text);
+        // if the string doesn't exist add it and get its id
+        if (stringId == -1)
+        {
+            player addStringTableEntry(text);
+            stringId = player getStringId(text);
+        }
+        // update the entry for this text element
+        print( "player: " +  player.name + " isDefined(self.textTableIndex):" + isDefined(self.id) + " text: " + text);
+        player editTextTableEntry(self.id, stringId);
+        self setText(text);
+    }*/
 }
 recreateText()
 {
-    foreach (entry in self.textTable)
+    for(i = 0; i < self.textTable.length; i++) {
+        entry = self.textTable[i];
         entry.element setSafeText(self, lookUpStringById(entry.stringId));
+    }     
 }
 addStringTableEntry(string)
 {
     // create new entry
     entry = spawnStruct();
     entry.id = self.stringTableEntryCount;
-    entry.string = string;
+    entry.text = string;
 
     self.stringTable[self.stringTable.size] = entry; // add new entry
     self.stringTableEntryCount++;
@@ -1185,22 +1197,24 @@ addStringTableEntry(string)
 lookUpStringById(id)
 {
     string = "";
-    foreach (entry in self.stringTable)
+    for(i = 0; i < self.textTable.length; i++) 
     {
+        entry = self.textTable[i];
         if (entry.id == id)
         {
-            string = entry.string;
+            string = entry.text;
             break;
         }
     }
     return string;
 }
-getStringId(string)
+getStringId(str)
 {
     id = -1;
-    foreach (entry in self.stringTable)
+    for(i = 0; i < self.textTable.length; i++) 
     {
-        if (entry.string == string)
+        entry = self.textTable[i];
+        if (entry.text == str)
         {
             id = entry.id;
             break;
@@ -1211,8 +1225,8 @@ getStringId(string)
 getStringTableEntry(id)
 {
     stringTableEntry = -1;
-    foreach (entry in self.stringTable)
-    {
+    for(i = 0; i < self.textTable.length; i++) {
+        entry = self.textTable[i];
         if (entry.id == id)
         {
             stringTableEntry = entry;
@@ -1225,16 +1239,20 @@ purgeStringTable()
 {
     stringTable = [];
     // store all used strings
-    foreach (entry in self.textTable)
+    for(i = 0; i < self.textTable.length; i++) 
+    {
+        entry = self.textTable[i];
         stringTable[stringTable.size] = getStringTableEntry(entry.stringId);
+    }
     self.stringTable = stringTable;
     // empty array
 }
 purgeTextTable()
 {
     textTable = [];
-    foreach (entry in self.textTable)
+    for(i = 0; i < self.textTable.length; i++) 
     {
+        entry = self.textTable[i];
         if (entry.id != -1)
             textTable[textTable.size] = entry;
     }
@@ -1244,16 +1262,16 @@ addTextTableEntry(element, stringId)
 {
     entry = spawnStruct();
     entry.id = self.textTableEntryCount;
+    entry.textTableIndex = entry.id;
     entry.element = element;
     entry.stringId = stringId;
-    element.textTableIndex = entry.id;
     self.textTable[self.textTable.size] = entry;
     self.textTableEntryCount++;
 }
 editTextTableEntry(id, stringId)
 {
-    foreach (entry in self.textTable)
-    {
+    for(i = 0; i < self.textTable.length; i++) {
+        entry = self.textTable[i];
         if (entry.id == id)
         {
             entry.stringId = stringId;
@@ -1263,8 +1281,8 @@ editTextTableEntry(id, stringId)
 }
 deleteTextTableEntry(id)
 {
-    foreach (entry in self.textTable)
-    {
+    for(i = 0; i < self.textTable.length; i++) {
+        entry = self.textTable[i];
         if (entry.id == id)
         {
             entry.id = -1;
