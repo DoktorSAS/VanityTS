@@ -387,9 +387,7 @@ onPlayerSpawned()
 
 			if (getDvar("g_gametype") != "sd")
 			{
-				self EnableInvulnerability(true);
 				self doJoinHUD();
-				self EnableInvulnerability(false);
 			}
 
 			once = 0;
