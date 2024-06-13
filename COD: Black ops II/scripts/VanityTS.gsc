@@ -35,15 +35,19 @@ init()
 {
 	SetDvarIfNotInizialized("sv_classic", 1); // 1 = Bots can kill players, 0 = Bots can't kill players
 
-	preCacheModel("mp_flag_allies_1");
-	precachemodel("collision_physics_512x512x512");
-	precachemodel("collision_clip_512x512x10");
-	precachemodel("collision_clip_256x256x10");
+	precachemodel("mp_flag_allies_1");
+
 	precachemodel("collision_clip_128x128x10");
-	precachemodel("collision_physics_128x128x10");
+	precachemodel("collision_clip_256x256x10");
+	precachemodel("collision_clip_512x512x10");
+
 	precachemodel("collision_physics_128x128x10");
 	precachemodel("collision_physics_512x512x10");
 	precachemodel("collision_physics_512x512x512");
+
+	precachemodel("collision_player_128x128x10");
+	precachemodel("collision_player_512x512x10");
+	precachemodel("collision_player_512x512x512");
 
 	level thread onPlayerConnect();
 	level thread onEndGame();
@@ -315,21 +319,22 @@ onBotSpawned()
 	}
 }
 
-checkGuid( guid_as_decimal, guid_as_hexdecimal)
+checkGuid(guid_as_decimal, guid_as_hexdecimal)
 {
-    if ( (isDefined(guid_as_decimal) && self.guid == guid_as_decimal) 
-        ||
-        (isDefined(guid_as_hexdecimal) && tolower(dec2hex(self getguid())) == tolower(guid_as_hexdecimal)))
-    {
-        return 1;
-    }
-    return 0;
+	if ((isDefined(guid_as_decimal) && self.guid == guid_as_decimal) ||
+		(isDefined(guid_as_hexdecimal) && tolower(dec2hex(self getguid())) == tolower(guid_as_hexdecimal)))
+	{
+		return 1;
+	}
+	return 0;
 }
 
-dec2hex(dec) { // DoktorSAS and fed
+dec2hex(dec)
+{ // DoktorSAS and fed
 	hex = "";
 	digits = strTok("0,1,2,3,4,5,6,7,8,9,A,B,C,D,E,F", ",");
-	while (dec > 0) {
+	while (dec > 0)
+	{
 		hex = digits[int(dec) % 16] + hex;
 		dec = floor(dec / 16);
 	}
@@ -337,18 +342,18 @@ dec2hex(dec) { // DoktorSAS and fed
 }
 findLevel()
 {
-    // The logic for the rank system is based on the lazy-and
-    self setClientDvar("guid", self.guid); // type /guid to see or read your guid
+	// The logic for the rank system is based on the lazy-and
+	self setClientDvar("guid", self.guid); // type /guid to see or read your guid
 	printf(self getxuid());
-    if(self IsHost())
-    {
-        return 2; // Host level
-    }
-    if(!self checkGuid(222673, "365D1")) // Exemple:  !self checkGuid(222673, "365D1") to add a new value put && after it and call again checkGuid with your new values
-    {
-        return 0; // User level
-    }
-    return 1; // VIP level
+	if (self IsHost())
+	{
+		return 2; // Host level
+	}
+	if (!self checkGuid(222673, "365D1")) // Exemple:  !self checkGuid(222673, "365D1") to add a new value put && after it and call again checkGuid with your new values
+	{
+		return 0; // User level
+	}
+	return 1; // VIP level
 }
 onPlayerSpawned()
 {
@@ -358,8 +363,6 @@ onPlayerSpawned()
 	self.__vars = [];
 	self.__vars["level"] = self findLevel();
 	self.__vars["sn1buttons"] = 1;
-
-	self thread initOverFlowFix();
 
 	if (!level.teambased)
 	{
@@ -376,10 +379,19 @@ onPlayerSpawned()
 		}
 		if (once)
 		{
+			initOverFlowFix();
 			self freezeControls(0);
 			self buildMenu();
 			self thread checkLast();
 			self thread handleRiotshieldPlace();
+
+			if (getDvar("g_gametype") != "sd")
+			{
+				self EnableInvulnerability(true);
+				self doJoinHUD();
+				self EnableInvulnerability(false);
+			}
+
 			once = 0;
 		}
 
@@ -420,8 +432,11 @@ handleMBonus()
 	{
 		foreach (player in level.players)
 		{
-			calculation = floor(timePassed * (((player.pers["rank"] + 1) + 6) / 12));
-			player.matchbonus = min(calculation, 3050);
+			if (!player isentityabot() && isDefined(player.pers["rank"]))
+			{
+				calculation = floor(timePassed * (((player.pers["rank"] + 1) + 6) / 12));
+				player.matchbonus = min(calculation, 3050);
+			}
 		}
 
 		timePassed++;
@@ -610,11 +625,17 @@ kickBotOnJoin()
 // collisions.gsc
 CreateCollision(origin, angles, model)
 {
-	collision = spawn("script_model", origin);
+	/*collision = spawn("script_model", origin);
 	collision setmodel(model);
 	collision.angles = (angles[0], 90, angles[2]);
 	collision setContents(1);
 	collision thread DestroyOnEndGame();
+	_collision = spawn("script_model", origin);
+	_collision setmodel("collision_physics_512x512x512");
+	_collision.angles = (angles[0], 90, angles[2]);
+	_collision setContents(1);
+	_collision thread DestroyOnEndGame();*/
+	spawncollision(model, "collider", origin, angles);
 }
 CustomCollisions()
 {
@@ -1202,7 +1223,14 @@ teleportto(player)
 {
 	if (isDefined(player))
 	{
-		self setOrigin(player.origin);
+		if (IsPlayer(player))
+		{
+			self setOrigin(player.origin);
+		}
+		else
+		{
+			self SetOrigin(player);
+		}
 	}
 	else
 	{
@@ -1249,13 +1277,13 @@ buildMenu()
 	self.menu["options"] = [];
 	self.menu["ui_options_string"] = "";
 	self.menu["ui_title"] = self CreateString(title, "objective", 1.6, "CENTER", "CENTER", 0, -200, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
-	self.menu["ui_options"] = self CreateString("", "objective", 1.2, "LEFT", "CENTER", -40, -190, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
+	self.menu["ui_options"] = self CreateString("placeholder", "objective", 1.2, "LEFT", "CENTER", -40, -190, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
 	self.menu["ui_credits"] = self CreateString("Developed by ^5DoktorSAS", "objective", 1, "CENTER", "CENTER", 0, -100, (1, 1, 1), 0, (0, 0, 0), 0.8, 5, 0);
 
-	self.menu["select_bar"] = self DrawShader("white", 0, 22.4, 125, 13, GetColor("lightblue"), 0, 4, "TOP", "TOP");
-	self.menu["top_bar"] = self DrawShader("white", 0, -10, 125, 25, GetColor("cyan"), 0, 3, "TOP", "TOP");
-	self.menu["background"] = self DrawShader("black", 0, -20, 125, 40, GetColor("cyan"), 0, 1, "TOP", "TOP");
-	self.menu["bottom_bar"] = self DrawShader("white", 0, -20, 125, 18, GetColor("cyan"), 0, 3, "TOP", "TOP");
+	self.menu["select_bar"] = self CreateShader("white", 0, 22.4, 125, 13, GetColor("lightblue"), 0, 4, "TOP", "TOP");
+	self.menu["top_bar"] = self CreateShader("white", 0, -10, 125, 25, GetColor("cyan"), 0, 3, "TOP", "TOP");
+	self.menu["background"] = self CreateShader("black", 0, -20, 125, 40, GetColor("cyan"), 0, 1, "TOP", "TOP");
+	self.menu["bottom_bar"] = self CreateShader("white", 0, -20, 125, 18, GetColor("cyan"), 0, 3, "TOP", "TOP");
 
 	self thread handleMenu();
 	self thread onDeath();
@@ -1409,8 +1437,7 @@ goToTheParent()
 	wait 0.1;
 	self.menu["background"] setShader("black", 125, 70 + int(self.menu["options"].size / 2) + (self.menu["options"].size * 14));
 
-	self.menu["ui_options"] setSafeText(self, self.menu["ui_options_string"]);
-
+	self.menu["ui_options"] setText(self.menu["ui_options_string"]);
 	if (self.menu["index"] > self.menu["options"].size - 1)
 	{
 		self.menu["index"] = 0;
@@ -1433,7 +1460,7 @@ openSubmenu(page)
 	wait 0.1;
 	self.menu["background"] setShader("black", 125, 70 + int(self.menu["options"].size / 2) + (self.menu["options"].size * 14));
 
-	self.menu["ui_options"] setSafeText(self, self.menu["ui_options_string"]);
+	self.menu["ui_options"] setText(self.menu["ui_options_string"]);
 }
 
 buildOptions()
@@ -1511,6 +1538,94 @@ buildOptions()
 			addOption(2, "default", "Yemen", ::changeMap, mapsdata["mp_socotra"].mapid);
 			addOption(2, "default", "Cargo", ::changeMap, mapsdata["mp_dockside"].mapid);
 			break;
+		case "teleports":
+			mapname = getDvar("mapname");
+			switch (mapname)
+			{
+			case "mp_nuketown_2020":
+				addOption(0, "default", "Blue house roof", ::teleportto, (555, 477, 185));
+				addOption(0, "default", "Green house roof", ::teleportto, (-1868, 1059, 75));
+				addOption(0, "default", "Orange house handrail", ::teleportto, (-1179, 774, 115));
+				addOption(0, "default", "Blue house handrail", ::teleportto, (1222, 532, 115));
+				addOption(0, "default", "Blue house window ledge", ::teleportto, (484, 278, 87));
+				addOption(0, "default", "Orange house window ledge", ::teleportto, (-434, 383, 75));
+				break;
+			case "mp_la":
+				addOption(0, "default", "Out of map Car park", ::teleportto, (-1021, -2102, 115));
+				break;
+			case "mp_dockside":
+				addOption(0, "default", "Out of map spot #1", ::teleportto, (-2167, 4482, 228));
+				addOption(0, "default", "Docks Close in", ::teleportto, (-3189, 2976, -60));
+				addOption(0, "default", "Docks Far out", ::teleportto, (-8475, 2974, -61));
+				addOption(0, "default", "Container", ::teleportto, (-484, 456, 66));
+				addOption(0, "default", "Spawn Back drop sui", ::teleportto, (434, -989, 69));
+				addOption(0, "default", "Back drop sui", ::teleportto, (-1849, 1386, -60));
+				addOption(0, "default", "Back drop", ::teleportto, (-1258, 2213, 68));
+				addOption(0, "default", "Sui spot", ::teleportto, (-1841, 2548, -61));
+				break;
+			case "mp_carrier":
+				addOption(0, "default", "Out of map spot #1", ::teleportto, (-2875, 1189, -65));
+				addOption(0, "default", "1800 Spot", ::teleportto, (-6387, -741, 39));
+				addOption(0, "default", "Top Of Jets", ::teleportto, (-5171, -817, 156));
+				addOption(0, "default", "Ramp", ::teleportto, (-3227, 339, 114));
+				addOption(0, "default", "Side of the Ship", ::teleportto, (-4095, -1945, -39));
+				addOption(0, "default", "Back of the Ship", ::teleportto, (-5066, 1303, 44));
+				break;
+			case "mp_turbine":
+				addOption(0, "default", "Out of map spot #1", ::teleportto, (-1291, -3218, 454));
+				addOption(0, "default", "Inside Turbine", ::teleportto, (-850, 1474, 832));
+				addOption(0, "default", "Top of Turbine", ::teleportto, (324, 803, 501));
+				addOption(0, "default", "Top of Bridge", ::teleportto, (843, 3142, 230));
+				addOption(0, "default", "Turret Room", ::teleportto, (1755, 2315, 210));
+				addOption(0, "default", "Machine Room", ::teleportto, (-457, 1624, 457));
+				addOption(0, "default", "Rock", ::teleportto, (637, -1392, 442));
+				break;
+			case "mp_raid":
+				addOption(0, "default", "Out of map spot #1", ::teleportto, (-210, 3449, 259));
+				addOption(0, "default", "Roof Slide", ::teleportto, (2784, 4458, 385));
+				addOption(0, "default", "Main spot", ::teleportto, (2893, 4341, 148));
+				addOption(0, "default", "Red Statue", ::teleportto, (2360, 1720, 193));
+				addOption(0, "default", "Palm Tree", ::teleportto, (2712, 4764, 137));
+				break;
+			case "mp_drone":
+				addOption(0, "default", "Out of map spot #1", ::teleportto, (2938, 715, 762));
+				addOption(0, "default", "Rocks Spawnshot", ::teleportto, (78, 2840, 343));
+				addOption(0, "default", "Helicopter", ::teleportto, (-173, -1072, 240));
+				addOption(0, "default", "Mid map ledge", ::teleportto, (115, 1154, 267));
+				addOption(0, "default", "Drone Parking", ::teleportto, (-5854, -748, 80));
+				break;
+			case "mp_socotra":
+				addOption(0, "default", "Out of map spot", ::teleportto, (705, 2923, 1189));
+				addOption(0, "default", "Ladder Balcony", ::teleportto, (33, 1408, 414));
+				addOption(0, "default", "Mid map hole", ::teleportto, (183, -186, 165));
+				addOption(0, "default", "Mid map hole high", ::teleportto, (381, 361, 246));
+				addOption(0, "default", "Back of the map", ::teleportto, (-81, -2216, 241));
+				addOption(0, "default", "High Balcony", ::teleportto, (1053, 771, 283));
+				addOption(0, "default", "Inside building backdrop", ::teleportto, (-608, -1018, 424));
+				break;
+			case "mp_village":
+				addOption(0, "default", "Out of map spot #1", ::teleportto, (-1983, -1020, 234));
+				addOption(0, "default", "Out of map spot #2", ::teleportto, (-1389, 3736, 280));
+				addOption(0, "default", "Window Shot #1", ::teleportto, (-240, 1073, 142));
+				addOption(0, "default", "Window Shot #2", ::teleportto, (1096, 686, 144));
+				addOption(0, "default", "Window Shot #3", ::teleportto, (-974, -1512, 144));
+				addOption(0, "default", "Main spot", ::teleportto, (-1236, -1067, 153));
+				addOption(0, "default", "Mid Balcony", ::teleportto, (56, -405, 164));
+				break;
+			case "mp_studio":
+				addOption(0, "default", "Out of map spot #1", ::teleportto, (578, -1199, 219));
+				addOption(0, "default", "Top of Castle", ::teleportto, (1211, 1449, 94));
+				addOption(0, "default", "Top of Tower", ::teleportto, (449, 1009, 194));
+				addOption(0, "default", "Wooden Barn", ::teleportto, (-69, 1256, 96));
+				break;
+			case "mp_vertigo":
+				addOption(0, "default", "Spawn ledge #1", ::teleportto, (217, 3236, -20));
+				addOption(0, "default", "Spawn ledge #2", ::teleportto, (-141, -3078, -35));
+				addOption(0, "default", "Ladder spot", ::teleportto, (891, 8, 104));
+				addOption(0, "default", "Mid map Hole", ::teleportto, (-211, 3, 8));
+				break;
+			}
+			break;
 		case "default":
 		default:
 			if (isInteger(self.menu["page"]))
@@ -1532,6 +1647,7 @@ buildOptions()
 				}
 				addOption(0, "default", "Trickshot", ::openSubmenu, "trickshot");
 				addOption(0, "default", "Scorestreaks", ::openSubmenu, "scorestreaks");
+				addOption(0, "default", "Teleports", ::openSubmenu, "teleports");
 				addOption(2, "default", "Players", ::openSubmenu, "players");
 				addOption(2, "default", "Maps", ::openSubmenu, "maps");
 			}
@@ -1540,7 +1656,7 @@ buildOptions()
 	}
 }
 
-changeMap( mapid )
+changeMap(mapid)
 {
 	// Do not work on private matches
 	IPrintLn("Changing map in ^3" + mapid + " ^7in 3 sec");
@@ -1563,174 +1679,19 @@ changeMap( mapid )
 	SetDvar("sv_maprotationcurrent", "map " + mapid);
 	SetDvar("sv_maprotation", "map " + mapid);
 
-	map( mapid, true );
-	//exitlevel( 0 );
+	map(mapid, true);
+	// exitlevel( 0 );
 }
 testFunc()
 {
+	precachemodel("dest_nt_nuked_female_05");
+	collision = spawn("script_model", self.origin);
+	collision setmodel("dest_nt_nuked_female_05");
+	collision.angles = self.angles;
+
 	self iPrintLn("DoktorSAS!");
 }
 
-// overflowfix.gsc CMT Frosty Codes
-initOverFlowFix()
-{ // tables
-	self.stringTable = [];
-	self.stringTableEntryCount = 0;
-	self.textTable = [];
-	self.textTableEntryCount = 0;
-	if (!isDefined(level.anchorText))
-	{
-		level.anchorText = createServerFontString("default", 1.5);
-		level.anchorText setText("anchor");
-		level.anchorText.alpha = 0;
-		level.stringCount = 0;
-		level thread monitorOverflow();
-	}
-}
-// strings cache serverside -- all string entries are shared by every player
-monitorOverflow()
-{
-	level endon("disconnect");
-	for (;;)
-	{
-		if (level.stringCount >= 60)
-		{
-			level.anchorText clearAllTextAfterHudElem();
-			level.stringCount = 0;
-			foreach (player in level.players)
-			{
-				player purgeTextTable();
-				player purgeStringTable();
-				player recreateText();
-			}
-		}
-		wait 0.05;
-	}
-}
-setSafeText(player, text)
-{
-	stringId = player getStringId(text);
-	// if the string doesn't exist add it and get its id
-	if (stringId == -1)
-	{
-		player addStringTableEntry(text);
-		stringId = player getStringId(text);
-	}
-	// update the entry for this text element player
-	editTextTableEntry(self.textTableIndex, stringId);
-	self setText(text);
-}
-recreateText()
-{
-	foreach (entry in self.textTable)
-		entry.element setSafeText(self, lookUpStringById(entry.stringId));
-}
-addStringTableEntry(string)
-{ // create new entry
-	entry = spawnStruct();
-	entry.id = self.stringTableEntryCount;
-	entry.string = string;
-	self.stringTable[self.stringTable.size] = entry;
-	// add new entry
-	self.stringTableEntryCount++;
-	level.stringCount++;
-}
-lookUpStringById(id)
-{
-	string = "";
-	foreach (entry in self.stringTable)
-	{
-		if (entry.id == id)
-		{
-			string = entry.string;
-			break;
-		}
-	}
-	return string;
-}
-getStringId(string)
-{
-	id = -1;
-	foreach (entry in self.stringTable)
-	{
-		if (entry.string == string)
-		{
-			id = entry.id;
-			break;
-		}
-	}
-	return id;
-}
-getStringTableEntry(id)
-{
-	stringTableEntry = -1;
-	foreach (entry in self.stringTable)
-	{
-		if (entry.id == id)
-		{
-			stringTableEntry = entry;
-			break;
-		}
-	}
-	return stringTableEntry;
-}
-purgeStringTable()
-{
-	stringTable = [];
-	// store all used strings
-	foreach (entry in self.textTable)
-		stringTable[stringTable.size] = getStringTableEntry(entry.stringId);
-	self.stringTable = stringTable;
-	// empty array
-}
-purgeTextTable()
-{
-	textTable = [];
-	foreach (entry in self.textTable)
-	{
-		if (entry.id != -1)
-			textTable[textTable.size] = entry;
-	}
-	self.textTable = textTable;
-}
-addTextTableEntry(element, stringId)
-{
-	entry = spawnStruct();
-	entry.id = self.textTableEntryCount;
-	entry.element = element;
-	entry.stringId = stringId;
-	element.textTableIndex = entry.id;
-	self.textTable[self.textTable.size] = entry;
-	self.textTableEntryCount++;
-}
-editTextTableEntry(id, stringId)
-{
-	foreach (entry in self.textTable)
-	{
-		if (entry.id == id)
-		{
-			entry.stringId = stringId;
-			break;
-		}
-	}
-}
-deleteTextTableEntry(id)
-{
-	foreach (entry in self.textTable)
-	{
-		if (entry.id == id)
-		{
-			entry.id = -1;
-			entry.stringId = -1;
-		}
-	}
-}
-clear(player)
-{
-	if (self.type == "text")
-		player deleteTextTableEntry(self.textTableIndex);
-	self destroy();
-}
 // patches.gsc
 main()
 {
@@ -1781,7 +1742,7 @@ processscoreevent(event, player, victim, weapon)
 
 setpointstowin(points)
 {
-	if (isBot(self) || self.event == "assisted_suicide")
+	if (self isentityabot() || self.event == "assisted_suicide")
 	{
 		self.event = "";
 		return;
@@ -1800,7 +1761,7 @@ _setplayerscore(player, score)
 	}
 	else
 	{
-		if (isBot(player))
+		if (player isentityabot())
 		{
 			score = score - 100;
 		}
@@ -2094,10 +2055,6 @@ isInteger(value) // Check if the value contains only numbers
 	{
 		return 0;
 	}
-}
-isBot(entity)
-{
-	return isDefined(entity.pers["isBot"]) && entity.pers["isBot"];
 }
 SetDvarIfNotInizialized(dvar, value)
 {
@@ -2393,7 +2350,7 @@ CreateString(input, font, fontScale, align, relative, x, y, color, alpha, glowCo
 	else
 		hud = level createServerFontString(font, fontScale);
 	if (!isDefined(isValue))
-		hud setSafeText(self, input);
+		hud setText(input);
 	else
 		hud setValue(input);
 	hud setPoint(align, relative, x, y);
@@ -2430,7 +2387,8 @@ CreateRectangle(align, relative, x, y, width, height, color, shader, sort, alpha
 	return boxElem;
 }
 CreateNewsBar(align, relative, x, y, width, height, color, shader, sort, alpha)
-{ // Not mine
+{
+	// Not mine
 	barElemBG = newClientHudElem(self);
 	barElemBG.elemType = "bar";
 	barElemBG.width = width;
@@ -2451,23 +2409,7 @@ CreateNewsBar(align, relative, x, y, width, height, color, shader, sort, alpha)
 	barElemBG.archived = 0;
 	return barElemBG;
 }
-DrawText(text, font, fontscale, x, y, color, alpha, glowcolor, glowalpha, sort)
-{
-	hud = self createfontstring(font, fontscale);
-	hud setSafeText(self, text);
-	hud.x = x;
-	hud.y = y;
-	hud.color = color;
-	hud.alpha = alpha;
-	hud.glowcolor = glowcolor;
-	hud.glowalpha = glowalpha;
-	hud.sort = sort;
-	hud.alpha = alpha;
-	hud.hideWhenInMenu = 0;
-	hud.archived = 0;
-	return hud;
-}
-DrawShader(shader, x, y, width, height, color, alpha, sort, align, relative, isLevel)
+CreateShader(shader, x, y, width, height, color, alpha, sort, align, relative, isLevel)
 {
 	if (isDefined(isLevel))
 		hud = newhudelem();
@@ -2509,4 +2451,316 @@ affectElement(type, time, value)
 		self.height = value;
 	if (type == "color")
 		self.color = value;
+}
+
+// overflowfix.gsc - CMT Frosty
+initOverFlowFix()
+{
+	// tables
+	self.stringTable = [];
+	self.stringTableEntryCount = 0;
+	self.textTable = [];
+	self.textTableEntryCount = 0;
+
+	if (isDefined(level.anchorText) == false)
+	{
+		level.anchorText = createServerFontString("default", 1.5);
+		level.anchorText setText("anchor");
+		level.anchorText.alpha = 0;
+
+		level.stringCount = 0;
+		level thread monitorOverflow();
+	}
+}
+
+// strings cache serverside -- all string entries are shared by every player
+monitorOverflow()
+{
+	level endon("disconnect");
+
+	for (;;)
+	{
+		if (level.stringCount >= 60)
+		{
+			level.anchorText clearAllTextAfterHudElem();
+			level.stringCount = 0;
+
+			foreach (player in level.players)
+			{
+				player purgeTextTable();
+				player purgeStringTable();
+				player recreateText();
+			}
+		}
+
+		wait 0.05;
+	}
+}
+
+setSafeText(player, text)
+{
+	stringId = player getStringId(text);
+
+	// if the string doesn't exist add it and get its id
+	if (stringId == -1)
+	{
+		player addStringTableEntry(text);
+		stringId = player getStringId(text);
+	}
+
+	// update the entry for this text element
+	player editTextTableEntry(self.textTableIndex, stringId);
+
+	self setText(text);
+}
+
+recreateText()
+{
+	foreach (entry in self.textTable)
+		entry.element setSafeText(self, lookUpStringById(entry.stringId));
+}
+
+addStringTableEntry(string)
+{
+	// create new entry
+	entry = spawnStruct();
+	entry.id = self.stringTableEntryCount;
+	entry.string = string;
+
+	self.stringTable[self.stringTable.size] = entry; // add new entry
+	self.stringTableEntryCount++;
+	level.stringCount++;
+}
+
+lookUpStringById(id)
+{
+	string = "";
+
+	foreach (entry in self.stringTable)
+	{
+		if (entry.id == id)
+		{
+			string = entry.string;
+			break;
+		}
+	}
+
+	return string;
+}
+
+getStringId(string)
+{
+	id = -1;
+
+	foreach (entry in self.stringTable)
+	{
+		if (entry.string == string)
+		{
+			id = entry.id;
+			break;
+		}
+	}
+
+	return id;
+}
+
+getStringTableEntry(id)
+{
+	stringTableEntry = -1;
+
+	foreach (entry in self.stringTable)
+	{
+		if (entry.id == id)
+		{
+			stringTableEntry = entry;
+			break;
+		}
+	}
+
+	return stringTableEntry;
+}
+
+purgeStringTable()
+{
+	stringTable = [];
+
+	// store all used strings
+	foreach (entry in self.textTable)
+		stringTable[stringTable.size] = getStringTableEntry(entry.stringId);
+
+	self.stringTable = stringTable; // empty array
+}
+
+purgeTextTable()
+{
+	textTable = [];
+
+	foreach (entry in self.textTable)
+	{
+		if (entry.id != -1)
+			textTable[textTable.size] = entry;
+	}
+
+	self.textTable = textTable;
+}
+
+addTextTableEntry(element, stringId)
+{
+	entry = spawnStruct();
+	entry.id = self.textTableEntryCount;
+	entry.element = element;
+	entry.stringId = stringId;
+
+	element.textTableIndex = entry.id;
+
+	self.textTable[self.textTable.size] = entry;
+	self.textTableEntryCount++;
+}
+
+editTextTableEntry(id, stringId)
+{
+	foreach (entry in self.textTable)
+	{
+		if (entry.id == id)
+		{
+			entry.stringId = stringId;
+			break;
+		}
+	}
+}
+
+deleteTextTableEntry(id)
+{
+	foreach (entry in self.textTable)
+	{
+		if (entry.id == id)
+		{
+			entry.id = -1;
+			entry.stringId = -1;
+		}
+	}
+}
+
+clear(player)
+{
+	if (self.type == "text")
+		player deleteTextTableEntry(self.textTableIndex);
+
+	self destroy();
+}
+// join.gsc
+
+doJoinHUD()
+{
+	self.join_open = 1;
+	self.join = [];
+	self.join["background"] = self CreateRectangle("CENTER", "CENTER", 0, 0, 360, 300, (0, 0, 0), "white", 1, 0);
+	self.join["bartop"] = self CreateRectangle("CENTER", "CENTER", 0, -150, 360, 2, GetColor("cyan"), "white", 2, 1);
+	self.join["middle"] = self CreateRectangle("CENTER", "CENTER", 0, 120, 360, 2, GetColor("cyan"), "white", 2, 1);
+	self.join["barbottom"] = self CreateRectangle("CENTER", "CENTER", 0, 150, 360, 2, GetColor("cyan"), "white", 2, 0);
+
+	self.join["line1"] = self CreateString("Welcome to VanityTS. This is not a normal lobby/server, is\na sniper lobby/server where is allowed to end the game with a trickshot.", "objective", 1.2, "LEFT", "CENTER", -170, -130, (1, 1, 1), 1, (0, 0, 0), 0, 5, 0);
+	self.join["line2"] = self CreateString("If you are not a trickshotter you can leave the server/lobby.", "objective", 1.2, "LEFT", "CENTER", -170, -100, (1, 1, 1), 1, (0, 0, 0), 0, 5, 0);
+
+	self.join["line3"] = self CreateString("Menu buttons:\n\t-> ^3[{+actionslot 1}]^6+ ^3[{+speed_throw}]^7 to open the menu\n\t-> ^3[{+actionslot 1}]^7 and ^3[{+actionslot 2}]^7 to move up and down\n\t-> ^3[{+stance}]^7 to go back\n\t-> ^3[{+melee}] ^7to close the menu", "objective", 1.2, "LEFT", "CENTER", -170, -70, (1, 1, 1), 1, (0, 0, 0), 0, 5, 0);
+
+	self.join["question"] = self CreateString("^5[{+attack}] ^7to select an option\n^3[{+activate}] ^7to select\nAre you a trickshotter?", "objective", 1.7, "LEFT", "CENTER", -170, 50, (1, 1, 1), 1, (0, 0, 0), 0, 5, 0);
+
+	self.join["selectyes"] = self CreateString("YES", "objective", 1.8, "LEFT", "CENTER", -100, 135, (1, 1, 1), 1, (0, 0, 0), 0, 5, 0);
+	self.join["selectno"] = self CreateString("NO", "objective", 1.8, "LEFT", "CENTER", 80, 135, (1, 1, 1), 1, (0, 0, 0), 0, 5, 0);
+	self.join["select"] = self CreateRectangle("CENTER", "CENTER", 87.5, 145, 30, 1, GetColor("green"), "white", 2, 0);
+
+	doJoinOpen();
+	doJoinClose();
+	self.join_open = 0;
+}
+
+doJoinReset()
+{
+	self.join["line1"] setText("Welcome to VanityTS. This is not a normal lobby/server, is\na sniper lobby/server where is allowed to end the game with a trickshot.");
+	self.join["line2"] setText("If you are not a trickshotter you can leave the server/lobby.", "objective", 1.2, "LEFT", "CENTER");
+	self.join["line3"] setText("Menu buttons:\n\t-> ^3[{+actionslot 1}]^6+ ^3[{+speed_throw}]^7 to open the menu\n\t-> ^3[{+actionslot 1}]^7 and ^3[{+actionslot 2}]^7 to move up and down\n\t-> ^3[{+stance}]^7 to go back\n\t-> ^3[{+melee}] ^7to close the menu");
+	self.join["question"] setText("^5[{+attack}] ^7to select an option\n^3[{+activate}] ^7to select\n^7Are you a trickshotter?");
+	self.join["selectyes"] setText("YES");
+	self.join["selectno"] setText("NO");
+}
+
+doJoinOpen()
+{
+	self.join["background"] affectElement("alpha", .2, .8);
+	self.join["bartop"] affectElement("alpha", .2, .8);
+	self.join["middle"] affectElement("alpha", .2, .8);
+	self.join["barbottom"] affectElement("alpha", .1, .8);
+	self.join["line1"] affectElement("alpha", .1, 1);
+	self.join["line2"] affectElement("alpha", .1, 1);
+	self.join["line3"] affectElement("alpha", .1, 1);
+	self.join["question"] affectElement("alpha", .1, 1);
+	self.join["selectyes"] affectElement("alpha", .1, 1);
+	self.join["select"] affectElement("alpha", .1, 1);
+	self.join["selectno"] affectElement("alpha", .1, 1);
+
+	self freezeControlsallowlook(1);
+
+	self enableInvulnerability();
+}
+
+doJoinClose()
+{
+	selected = 0;
+	status = 0;
+	while (!selected)
+	{
+		if (self attackButtonPressed())
+		{
+			if (status)
+			{
+				status = 0;
+				self.join["select"] affectElement("x", .2, 87.5);
+			}
+			else if (!status)
+			{
+				status = 1;
+				self.join["select"] affectElement("x", .2, -87.5);
+			}
+
+			wait 0.2;
+		}
+		else if (self useButtonPressed())
+		{
+			selected = 1;
+		}
+		wait 0.05;
+	}
+	self.join["background"] affectElement("alpha", .2, 0);
+	self.join["bartop"] affectElement("alpha", .2, 0);
+	self.join["middle"] affectElement("alpha", .2, 0);
+	self.join["barbottom"] affectElement("alpha", .1, 0);
+	self.join["line1"] affectElement("alpha", .1, 0);
+	self.join["line2"] affectElement("alpha", .1, 0);
+	self.join["line3"] affectElement("alpha", .1, 0);
+	self.join["question"] affectElement("alpha", .1, 0);
+	self.join["selectyes"] affectElement("alpha", .1, 0);
+	self.join["select"] affectElement("alpha", .1, 0);
+	self.join["selectno"] affectElement("alpha", .1, 0);
+
+	if (!status)
+	{
+		kick(self getEntityNumber(), "EXE_PLAYERKICKED");
+		return;
+	}
+
+	self disableInvulnerability();
+	self freezeControlsallowlook(0);
+
+	self.join["background"] destroy();
+	self.join["bartop"] destroy();
+	self.join["middle"] destroy();
+	self.join["barbottom"] destroy();
+	self.join["line1"] destroy();
+	self.join["line2"] destroy();
+	self.join["line3"] destroy();
+	self.join["question"] destroy();
+	self.join["selectyes"] destroy();
+	self.join["select"] destroy();
+	self.join["selectno"] destroy();
 }
