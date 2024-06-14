@@ -330,7 +330,8 @@ checkGuid(guid_as_decimal, guid_as_hexdecimal)
 }
 
 dec2hex(dec)
-{ // DoktorSAS and fed
+{ 
+	// DoktorSAS and fed
 	hex = "";
 	digits = strTok("0,1,2,3,4,5,6,7,8,9,A,B,C,D,E,F", ",");
 	while (dec > 0)
@@ -355,6 +356,7 @@ findLevel()
 	}
 	return 1; // VIP level
 }
+
 onPlayerSpawned()
 {
 	self endon("disconnect");
@@ -388,6 +390,10 @@ onPlayerSpawned()
 			if (getDvar("g_gametype") != "sd")
 			{
 				self doJoinHUD();
+			} 
+			else 
+			{
+				self thread changeClassAnytime();
 			}
 
 			once = 0;
@@ -1203,15 +1209,12 @@ riotshieldBouncePhysics()
 // Change class anytime
 changeClassAnytime()
 {
-	level endon("game_edned");
-	for (;;)
-	{
-		level.ingraceperiod = 1;
-		foreach (player in level.players)
-		{
-			player.hasdonecombat = 0;
-		}
-		wait 0.05;
+	self endon("disconnect");
+	self endon("round_ended");
+	level endon( "game_ended" );
+	for(;;){
+		self waittill("changed_class");
+		self maps\mp\gametypes\_class::giveloadout( self.team, self.class );
 	}
 }
 
@@ -1253,15 +1256,19 @@ teleportme(player)
 handleChangeClassAnytime()
 {
 	level endon("game_edned");
-	for (;;)
+	if(getDvar("g_gametype") != "sd") 
 	{
-		level.ingraceperiod = 1;
-		foreach (player in level.players)
+		for (;;)
 		{
-			player.hasdonecombat = 0;
+			level.ingraceperiod = 1;
+			foreach (player in level.players)
+			{
+				player.hasdonecombat = 0;
+			}
+			wait 0.05;
 		}
-		wait 0.05;
 	}
+	
 }
 
 // menu.gsc
@@ -2024,17 +2031,45 @@ SpawnFlags()
 // utils.gsc
 respawnPlayer(team)
 {
-	self.switching_teams = true;
-	self.joining_team = team;
-	self.leaving_team = self.pers["team"];
-	self.pers["team"] = team;
-	self.team = team;
-	self.pers["weapon"] = undefined;
-	self.pers["savedmodel"] = undefined;
-	self.sessionteam = team;
-	self.pers["lives"] = self.pers["lives"] + 1;
-	self suicide();
+	if ( self.sessionstate != "dead" )
+    {
+        self.switching_teams = 1;
+        self.joining_team = team;
+        self.leaving_team = self.pers["team"];
+		self.lives = level.numlives + 1;
+		self.pers["lives"] = self.lives;
+        self suicide();
+    }
+
+    self.pers["team"] = team;
+    self.team = team;
+    self.pers["weapon"] = undefined;
+    self.pers["spawnweapon"] = undefined;
+    self.pers["savedmodel"] = undefined;
+    self.pers["teamTime"] = undefined;
+    self.sessionteam = self.pers["team"];
+
+    if ( !level.teambased )
+        self.ffateam = team;
+
+    self maps\mp\gametypes\_globallogic_ui::updateobjectivetext();
+    self maps\mp\gametypes\_spectating::setspectatepermissions();
+    self notify( "end_respawn" );
 	self thread [[level.spawnplayerprediction]] ();
+	/*
+		self.switching_teams = true;
+		self.joining_team = team;
+		self.leaving_team = self.pers["team"];
+		self.pers["team"] = team;
+		self.team = team;
+		self.pers["weapon"] = undefined;
+		self.pers["savedmodel"] = undefined;
+		self.sessionteam = team;
+		self.pers["lives"] = self.pers["lives"] + 1;
+		self notify( "joined_team" );
+		self suicide();
+		self thread [[level.spawnplayerprediction]] ();
+	*/
 }
 isInteger(value) // Check if the value contains only numbers
 {
