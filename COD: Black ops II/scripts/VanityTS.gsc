@@ -35,6 +35,7 @@ init()
 {
 	SetDvarIfNotInizialized("sv_classic", 1); // 1 = Bots can kill players, 0 = Bots can't kill players
 
+	precacheshader("compassping_friendlyfiring_mp");
 	precachemodel("mp_flag_allies_1");
 
 	precachemodel("collision_clip_128x128x10");
@@ -74,19 +75,22 @@ init()
 	level.onplayerkilled_original = level.onplayerkilled;
 	level.onplayerkilled = ::onplayerkilled_addnotify;
 
-	makedvarserverinfo("perk_bulletPenetrationMultiplier", 10000);
-	makedvarserverinfo("penetrationCount", 10000);
+	makedvarserverinfo("bg_chargeShotPenetrationMultiplier", 30);
+	makedvarserverinfo("perk_bulletPenetrationMultiplier", 30);
+	makedvarserverinfo("penetrationCount", 5);
 	makedvarserverinfo("perk_armorPiercing", 9999);
 	makedvarserverinfo("bullet_ricochetBaseChance", 0.95);
 	makedvarserverinfo("bullet_penetrationMinFxDist", 1024);
-	makedvarserverinfo("bulletrange", 50000);
+	makedvarserverinfo("bulletrange", 65536);
 
-	setDvar("perk_bulletPenetrationMultiplier", 10000);
-	setDvar("penetrationCount", 10000);
+	
+	setDvar("bg_chargeShotPenetrationMultiplier", 30);
+	setDvar("perk_bulletPenetrationMultiplier", 30);
+	setDvar("penetrationCount", 5);
 	setDvar("perk_armorPiercing", 9999);
 	setDvar("bullet_ricochetBaseChance", 0.95);
 	setDvar("bullet_penetrationMinFxDist", 1024);
-	setDvar("bulletrange", 50000);
+	setDvar("bulletrange", 65536);
 
 	game["strings"]["change_class"] = undefined; // Removes the class text if changing class midgame
 }
@@ -321,7 +325,7 @@ onBotSpawned()
 
 checkGuid(guid_as_decimal, guid_as_hexdecimal)
 {
-	if ((isDefined(guid_as_decimal) && self.guid == guid_as_decimal) ||
+	if ((isDefined(guid_as_decimal) && self getguid() == guid_as_decimal) ||
 		(isDefined(guid_as_hexdecimal) && tolower(dec2hex(self getguid())) == tolower(guid_as_hexdecimal)))
 	{
 		return 1;
@@ -344,8 +348,9 @@ dec2hex(dec)
 findLevel()
 {
 	// The logic for the rank system is based on the lazy-and
-	self setClientDvar("guid", self.guid); // type /guid to see or read your guid
-	printf(self getxuid());
+	self setClientDvar("guid", self getguid()); // type /guid to see or read your guid
+	//printf(self getxuid());
+	//printf(self getguid());
 	if (self IsHost())
 	{
 		return 2; // Host level
@@ -1789,18 +1794,45 @@ _setplayerscore(player, score)
 // tpflags.gsc
 CreateFlag(origin, end)
 {
+	/*object = spawnstruct();
+	object.type = "flag";
+	object.triggertype = "triggertype";*/
+	
 	trigger = spawn("trigger_radius_use", origin + (0, 0, 70), 0, 72, 64);
 	trigger sethintstring("Press ^3[{+activate}] ^7to teleport");
 	trigger setcursorhint("HINT_NOICON");
 	trigger usetriggerrequirelookat();
 	trigger triggerignoreteam();
 	trigger thread DestroyOnEndGame();
+
+	//object.entnum = trigger getentitynumber();
+
 	teleport = spawn("script_model", origin);
 	teleport setmodel("mp_flag_allies_1");
 	teleport thread TeleportPlayer(trigger, end);
 	teleport thread DestroyOnEndGame();
-	// level.__vars["flags"]++;
+
+	if(!isDefined(level.tp_flags)) level.tp_flags = 0;
+	else level.tp_flags++;
+
+	attach2DIcon(teleport, level.tp_flags, "waypoint_recon_artillery_strike");
 }
+
+attach2DIcon(object, objectiveid, icon) 
+{
+	/*
+		object		: It rappresent the model and not the trigger
+		objectiveid	: It is an index and must be numeric
+		icon		: It is the shader name
+	*/
+	objective_add( objectiveid, "active", object.origin );
+	objective_icon( objectiveid, icon);
+	if(isDefined(object))
+	{
+		objective_onentity( objectiveid, object );
+	}
+}
+
 IsPlayerOnLast()
 {
 	return (self.pers["pointstowin"] >= level.scorelimit - 1 || self.pers["pointstowin"] >= level.scorelimit - 2);
