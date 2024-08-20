@@ -485,7 +485,6 @@ onPlayerSpawned()
         {
             self freezeControls(0);
             self buildMenu();
-            self thread initOverFlowFix();
             once = 0;
         }
 
@@ -508,14 +507,18 @@ buildMenu()
     self.menu["page"] = "";
     self.menu["options"] = [];
     self.menu["ui_options_string"] = "";
-    self.menu["ui_title"] = self CreateString(title, "objective", 1.4, "CENTER", "CENTER", 0, -200, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
-    self.menu["ui_options"] = self CreateString("", "objective", 1.2, "LEFT", "CENTER", -55, -190, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
-    self.menu["ui_credits"] = self CreateString("Developed by ^5DoktorSAS", "objective", 0.8, "TOP", "CENTER", 0, -100, (1, 1, 1), 0, (0, 0, 0), 0.8, 5, 0);
+    
+	self.menu["select_bar"] = self CreateRectangle("TOP", "TOP", 0, 0, 150, 13, GetColor("lightblue"), "white", 4, 0);
+	self.menu["top_bar"]    = self CreateRectangle("TOP", "TOP", 0, 58 -10 - 20, 150, 25, GetColor("cyan"), "white", 3, 0);
+	self.menu["background"] = self CreateRectangle("TOP", "TOP", 0, 0, 150, 40, GetColor("cyan"), "black", 1, 0);
+	self.menu["bottom_bar"] = self CreateRectangle("TOP", "TOP", 0, 0, 150, 18, GetColor("cyan"), "white", 3, 0);
 
-    self.menu["select_bar"] = self DrawShader("white", 362.5 - 105, 58, 125, 13, GetColor("lightblue"), 0, 4, "TOP", "CENTER");
-    self.menu["top_bar"] = self DrawShader("white", 362.5 - 105, 25, 125, 25, GetColor("cyan"), 0, 3, "TOP", "CENTER");
-    self.menu["background"] = self DrawShader("black", 362.5 - 105, 40, 125, 40, GetColor("cyan"), 0, 1, "TOP", "CENTER");
-    self.menu["bottom_bar"] = self DrawShader("white", 362.5 - 105, 58, 125, 18, GetColor("cyan"), 0, 3, "TOP", "CENTER");
+    self.menu["ui_title"] = self CreateString(title, "objective", 1.5, "CENTER", "TOP", self.menu["top_bar"].x, self.menu["top_bar"].y + 12, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
+	self.menu["ui_options"] = self CreateString("placeholder", "objective", 1.2, "CENTER", "TOP", 0, self.menu["top_bar"].y + 34, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
+	self.menu["ui_credits"] = self CreateString("Developed by ^5DoktorSAS", "objective", 0.8, "CENTER", "TOP", 0, self.menu["bottom_bar"].y, (1, 1, 1), 0, (0, 0, 0), 0.8, 5, 0);
+
+    self.menu["select_bar"] setPoint("TOP", "TOP", self.menu["ui_options"].x, self.menu["ui_options"].y - 6);
+    self.menu["background"] setPoint("TOP", "TOP", self.menu["top_bar"].x, self.menu["top_bar"].y - 5);
 
     self thread handleMenu();
     self thread onDeath();
@@ -526,10 +529,9 @@ showMenu()
     buildOptions();
     self.menu["status"] = 1;
 
-    self.menu["background"] setShader("black", 125, 55 + int(self.menu["options"].size / 2) + (self.menu["options"].size * 14));
-
-    self.menu["ui_credits"].y = -169.5 + (self.menu["options"].size * 14.6 + 5);
-    self.menu["bottom_bar"].y = 58 + (self.menu["options"].size * 14.6) + 14.6;
+    self.menu["background"] setShader("black", 150, 40 + int(self.menu["options"].size / 2) + (self.menu["options"].size * 14));
+    self.menu["bottom_bar"] affectElement("y", 0.1, self.menu["ui_options"].y + (self.menu["options"].size * 14));
+    self.menu["ui_credits"] affectElement("y", 0.1, self.menu["ui_options"].y + (self.menu["options"].size * 14) + 8);
 
     self.menu["ui_title"] affectElement("alpha", 0.4, 1);
     self.menu["ui_options"] affectElement("alpha", 0.4, 1);
@@ -570,7 +572,7 @@ goToNextOption()
     {
         self.menu["index"] = 0;
     }
-    self.menu["select_bar"] affectElement("y", 0.1, 58 + (self.menu["index"] * 14.6));
+    self.menu["select_bar"] affectElement("y", 0.1, self.menu["ui_options"].y + (self.menu["index"] * 14) - 6);
     wait 0.1;
 }
 
@@ -581,7 +583,7 @@ goToPreviusOption()
     {
         self.menu["index"] = self.menu["options"].size - 1;
     }
-    self.menu["select_bar"] affectElement("y", 0.1, 58 + (self.menu["index"] * 14.6));
+    self.menu["select_bar"] affectElement("y", 0.1, self.menu["ui_options"].y + (self.menu["index"] * 14) - 6);
     wait 0.1;
 }
 
@@ -647,7 +649,14 @@ addOption(lvl, parent, option, function, args)
         self.menu["options"][i].label = option;
         self.menu["options"][i].invoke = function;
         self.menu["options"][i].args = args;
-        self.menu["ui_options_string"] = self.menu["ui_options_string"] + "^7\n" + self.menu["options"][i].label;
+        if(self.menu["ui_options_string"] == "")
+        {
+            self.menu["ui_options_string"] = self.menu["options"][i].label;
+        } 
+        else
+        {
+            self.menu["ui_options_string"] = self.menu["ui_options_string"] + "^7\n" + self.menu["options"][i].label;
+        }
     }
 }
 
@@ -669,14 +678,14 @@ goToTheParent()
     {
         self.menu["index"] = self.menu["options"].size - 1;
     }
-    self.menu["select_bar"] affectElement("y", 0.1, 58 + (self.menu["index"] * 14.6));
+    self.menu["select_bar"] affectElement("y", 0.1,  self.menu["ui_options"].y + (self.menu["index"] * 14) - 6);
 
-    self.menu["ui_credits"] affectElement("y", 0.12, -169.5 + (self.menu["options"].size * 14.6 + 5));
-    self.menu["bottom_bar"] affectElement("y", 0.12, 58 + (self.menu["options"].size * 14.6) + 14.6);
+    self.menu["bottom_bar"] affectElement("y", 0.1, self.menu["ui_options"].y + (self.menu["options"].size * 14));
+    self.menu["ui_credits"] affectElement("y", 0.1, self.menu["ui_options"].y + (self.menu["options"].size * 14) + 8);
     wait 0.1;
-    self.menu["background"] setShader("black", 125, 55 + int(self.menu["options"].size / 2) + (self.menu["options"].size * 14));
+     self.menu["background"] setShader("black", 150, 40 + int(self.menu["options"].size / 2) + (self.menu["options"].size * 14));
 
-    self.menu["ui_options"] setSafeText(self, self.menu["ui_options_string"]);
+    self.menu["ui_options"] setText(self.menu["ui_options_string"]);
 
     if (self.menu["index"] > self.menu["options"].size - 1)
     {
@@ -692,15 +701,16 @@ openSubmenu(page)
 {
     self.menu["page"] = page;
     self.menu["index"] = 0;
-    self.menu["select_bar"] affectElement("y", 0.1, 58 + (self.menu["index"] * 14.6));
+    //self.menu["select_bar"] affectElement("y", 0.1, 58 + (self.menu["index"] * 14));
+    self.menu["select_bar"] setPoint("TOP", "TOP", self.menu["ui_options"].x, self.menu["ui_options"].y - 6);
     buildOptions();
 
-    self.menu["ui_credits"] affectElement("y", 0.12, -169.5 + (self.menu["options"].size * 14.6 + 5));
-    self.menu["bottom_bar"] affectElement("y", 0.12, 58 + (self.menu["options"].size * 14.6) + 14.6);
+    self.menu["bottom_bar"] affectElement("y", 0.1, self.menu["ui_options"].y + (self.menu["options"].size * 14));
+    self.menu["ui_credits"] affectElement("y", 0.1, self.menu["ui_options"].y + (self.menu["options"].size * 14) + 8);
     wait 0.1;
-    self.menu["background"] setShader("black", 125, 55 + int(self.menu["options"].size / 2) + (self.menu["options"].size * 14));
+     self.menu["background"] setShader("black", 150, 40 + int(self.menu["options"].size / 2) + (self.menu["options"].size * 14));
 
-    self.menu["ui_options"] setSafeText(self, self.menu["ui_options_string"]);
+    self.menu["ui_options"] setText(self.menu["ui_options_string"]);
 }
 buildOptions()
 {
@@ -907,107 +917,93 @@ GetColor(color)
 // Drawing
 CreateString(input, font, fontScale, align, relative, x, y, color, alpha, glowColor, glowAlpha, sort, isLevel, isValue)
 {
-    if (!isDefined(isLevel) || isLevel == 0)
-        hud = self createFontString(font, fontScale);
-    else
-        hud = level createServerFontString(font, fontScale);
-    if (!isDefined(isValue) || isValue == 0)
-        hud setSafeText(self, input);
-    else
-        hud setValue(input);
-    hud setPoint(align, relative, x, y);
-    hud.color = color;
-    hud.alpha = alpha;
-    hud.glowColor = glowColor;
-    hud.glowAlpha = glowAlpha;
-    hud.sort = sort;
-    hud.alpha = alpha;
-    hud.archived = 0;
-    hud.hideWhenInMenu = 0;
-    return hud;
+	if (!isDefined(isLevel))
+		hud = self createFontString(font, fontScale);
+	else
+		hud = level createServerFontString(font, fontScale);
+	if (!isDefined(isValue))
+		hud setText(input);
+	else
+		hud setValue(input);
+	hud setPoint(align, relative, x, y);
+	hud.color = color;
+	hud.alpha = alpha;
+	hud.glowColor = glowColor;
+	hud.glowAlpha = glowAlpha;
+	hud.sort = sort;
+	hud.alpha = alpha;
+	hud.archived = 0;
+	hud.hideWhenInMenu = 0;
+	return hud;
 }
 CreateRectangle(align, relative, x, y, width, height, color, shader, sort, alpha)
 {
-    boxElem = newClientHudElem(self);
-    boxElem.elemType = "bar";
-    boxElem.width = width;
-    boxElem.height = height;
-    boxElem.align = align;
-    boxElem.relative = relative;
-    boxElem.xOffset = 0;
-    boxElem.yOffset = 0;
-    boxElem.children = [];
-    boxElem.sort = sort;
-    boxElem.color = color;
-    boxElem.alpha = alpha;
-    boxElem setParent(level.uiparent);
-    boxElem setShader(shader, width, height);
-    boxElem.hidden = 0;
-    boxElem setPoint(align, relative, x, y);
-    boxElem.hideWhenInMenu = 0;
-    boxElem.archived = 0;
-    return boxElem;
+	boxElem = newClientHudElem(self);
+	boxElem.elemType = "bar";
+	boxElem.width = width;
+	boxElem.height = height;
+	boxElem.align = align;
+	boxElem.relative = relative;
+	boxElem.xOffset = 0;
+	boxElem.yOffset = 0;
+	boxElem.children = [];
+	boxElem.sort = sort;
+	boxElem.color = color;
+	boxElem.alpha = alpha;
+	boxElem setParent(level.uiParent);
+	boxElem setShader(shader, width, height);
+	boxElem.hidden = 0;
+	boxElem setPoint(align, relative, x, y);
+	boxElem.hideWhenInMenu = 0;
+	boxElem.archived = 0;
+	return boxElem;
 }
 CreateNewsBar(align, relative, x, y, width, height, color, shader, sort, alpha)
-{ // Not mine
-    barElemBG = newClientHudElem(self);
-    barElemBG.elemType = "bar";
-    barElemBG.width = width;
-    barElemBG.height = height;
-    barElemBG.align = align;
-    barElemBG.relative = relative;
-    barElemBG.xOffset = 0;
-    barElemBG.yOffset = 0;
-    barElemBG.children = [];
-    barElemBG.sort = sort;
-    barElemBG.color = color;
-    barElemBG.alpha = alpha;
-    barElemBG setParent(level.uiparent);
-    barElemBG setShader(shader, width, height);
-    barElemBG.hidden = 0;
-    barElemBG setPoint(align, relative, x, y);
-    barElemBG.hideWhenInMenu = 0;
-    barElemBG.archived = 0;
-    return barElemBG;
-}
-DrawText(text, font, fontscale, x, y, color, alpha, glowcolor, glowalpha, sort)
 {
-    hud = self createfontstring(font, fontscale);
-    hud setSafeText(self, text);
-    hud.x = x;
-    hud.y = y;
-    hud.color = color;
-    hud.alpha = alpha;
-    hud.glowcolor = glowcolor;
-    hud.glowalpha = glowalpha;
-    hud.sort = sort;
-    hud.alpha = alpha;
-    hud.hideWhenInMenu = 0;
-    hud.archived = 0;
-    return hud;
+	// Not mine
+	barElemBG = newClientHudElem(self);
+	barElemBG.elemType = "bar";
+	barElemBG.width = width;
+	barElemBG.height = height;
+	barElemBG.align = align;
+	barElemBG.relative = relative;
+	barElemBG.xOffset = 0;
+	barElemBG.yOffset = 0;
+	barElemBG.children = [];
+	barElemBG.sort = sort;
+	barElemBG.color = color;
+	barElemBG.alpha = alpha;
+	barElemBG setParent(level.uiParent);
+	barElemBG setShader(shader, width, height);
+	barElemBG.hidden = 0;
+	barElemBG setPoint(align, relative, x, y);
+	barElemBG.hideWhenInMenu = 0;
+	barElemBG.archived = 0;
+	return barElemBG;
 }
-DrawShader(shader, x, y, width, height, color, alpha, sort, align, relative, isLevel)
+
+CreateShader(shader, x, y, width, height, color, alpha, sort, align, relative, isLevel)
 {
-    if (isDefined(isLevel) || isLevel == 0)
-        hud = newhudelem();
-    else
-        hud = newclienthudelem(self);
-    hud.elemtype = "icon";
-    hud.color = color;
-    hud.alpha = alpha;
-    hud.sort = sort;
-    hud.children = [];
-    if (isDefined(align))
-        hud.align = align;
-    if (isDefined(relative))
-        hud.relative = relative;
-    // hud setparent(level.uiparent);
-    hud.x = x;
-    hud.y = y;
-    hud setshader(shader, width, height);
-    hud.hideWhenInMenu = 0;
-    hud.archived = 0;
-    return hud;
+	if (isDefined(isLevel))
+		hud = newhudelem();
+	else
+		hud = newclienthudelem(self);
+	hud.elemtype = "icon";
+	hud.color = color;
+	hud.alpha = alpha;
+	hud.sort = sort;
+	hud.children = [];
+	if (isDefined(align))
+		hud.align = align;
+	if (isDefined(relative))
+		hud.relative = relative;
+	hud setparent(level.uiparent);
+	hud.x = x;
+	hud.y = y;
+	hud setshader(shader, width, height);
+	hud.hideWhenInMenu = 0;
+	hud.archived = 0;
+	return hud;
 }
 // Animations
 affectElement(type, time, value)
@@ -1203,168 +1199,10 @@ teleportme(player)
     }
 }
 
-// overflowfix.gsc
-// CMT Frosty Codes
-initOverFlowFix()
-{ // tables
-    self.stringTable = [];
-    self.stringTableEntryCount = 0;
-    self.textTable = [];
-    self.textTableEntryCount = 0;
-    if (!isDefined(level.anchorText))
-    {
-        level.anchorText = createServerFontString("default", 1.5);
-        level.anchorText setText("anchor");
-        level.anchorText.alpha = 0;
-        level.stringCount = 0;
-        level thread monitorOverflow();
-    }
-}
-// strings cache serverside -- all string entries are shared by every player
-monitorOverflow()
-{
-    level endon("disconnect");
-    for (;;)
-    {
-        if (level.stringCount >= 60)
-        {
-            level.anchorText clearAllTextAfterHudElem();
-            level.stringCount = 0;
-            foreach (player in level.players)
-            {
-                player purgeTextTable();
-                player purgeStringTable();
-                player recreateText();
-            }
-        }
-        wait 0.05;
-    }
-}
-setSafeText(player, text)
-{
-    stringId = player getStringId(text);
-    // if the string doesn't exist add it and get its id
-    if (stringId == -1)
-    {
-        player addStringTableEntry(text);
-        stringId = player getStringId(text);
-    }
-    // update the entry for this text element
-    player editTextTableEntry(self.textTableIndex, stringId);
-    self setText(text);
-}
-recreateText()
-{
-    foreach (entry in self.textTable)
-        entry.element setSafeText(self, lookUpStringById(entry.stringId));
-}
-addStringTableEntry(string)
-{
-    // create new entry
-    entry = spawnStruct();
-    entry.id = self.stringTableEntryCount;
-    entry.string = string;
+// overflowfix.gsc TODO
 
-    self.stringTable[self.stringTable.size] = entry; // add new entry
-    self.stringTableEntryCount++;
-    level.stringCount++;
-}
-lookUpStringById(id)
-{
-    string = "";
-    foreach (entry in self.stringTable)
-    {
-        if (entry.id == id)
-        {
-            string = entry.string;
-            break;
-        }
-    }
-    return string;
-}
-getStringId(string)
-{
-    id = -1;
-    foreach (entry in self.stringTable)
-    {
-        if (entry.string == string)
-        {
-            id = entry.id;
-            break;
-        }
-    }
-    return id;
-}
-getStringTableEntry(id)
-{
-    stringTableEntry = -1;
-    foreach (entry in self.stringTable)
-    {
-        if (entry.id == id)
-        {
-            stringTableEntry = entry;
-            break;
-        }
-    }
-    return stringTableEntry;
-}
-purgeStringTable()
-{
-    stringTable = [];
-    // store all used strings
-    foreach (entry in self.textTable)
-        stringTable[stringTable.size] = getStringTableEntry(entry.stringId);
-    self.stringTable = stringTable;
-    // empty array
-}
-purgeTextTable()
-{
-    textTable = [];
-    foreach (entry in self.textTable)
-    {
-        if (entry.id != -1)
-            textTable[textTable.size] = entry;
-    }
-    self.textTable = textTable;
-}
-addTextTableEntry(element, stringId)
-{
-    entry = spawnStruct();
-    entry.id = self.textTableEntryCount;
-    entry.element = element;
-    entry.stringId = stringId;
-    element.textTableIndex = entry.id;
-    self.textTable[self.textTable.size] = entry;
-    self.textTableEntryCount++;
-}
-editTextTableEntry(id, stringId)
-{
-    foreach (entry in self.textTable)
-    {
-        if (entry.id == id)
-        {
-            entry.stringId = stringId;
-            break;
-        }
-    }
-}
-deleteTextTableEntry(id)
-{
-    foreach (entry in self.textTable)
-    {
-        if (entry.id == id)
-        {
-            entry.id = -1;
-            entry.stringId = -1;
-        }
-    }
-}
-clear(player)
-{
-    if (self.type == "text")
-        player deleteTextTableEntry(self.textTableIndex);
-    self destroy();
-}
+
+
 // bots.gsc
 inizializeBots()
 {
