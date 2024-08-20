@@ -1147,6 +1147,7 @@ LoadSpawn()
 
 giveHardpoint(args)
 {
+    sas = strTok(args, ";");
     self iprintln(sas[1] + " is now ^2available");
 }
 // Suicide
