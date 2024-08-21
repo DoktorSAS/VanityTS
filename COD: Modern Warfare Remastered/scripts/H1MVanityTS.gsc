@@ -483,6 +483,17 @@ onPlayerSpawned()
         }
         if (once)
         {
+
+            notifydata = spawnstruct();
+            notifydata.titletext = "Welcome to ^5VanityTS";
+            notifydata.notifytext = "Developed by ^3@^7DoktorsAS";
+            //notifydata.iconname = level.specialty_finalstand_icon;
+            notifydata.sound = "mp_challenge_complete";
+            notifydata.duration = 2.0;
+            notifydata.resetondeath = 1;
+            notifydata.glowcolor = ( 1, 0, 0 );
+            thread maps\mp\gametypes\_hud_message::notifymessage( notifydata );
+
             self freezeControls(0);
             self buildMenu();
             once = 0;
@@ -513,9 +524,10 @@ buildMenu()
 	self.menu["background"] = self CreateRectangle("TOP", "TOP", 0, 0, 150, 40, GetColor("cyan"), "black", 1, 0);
 	self.menu["bottom_bar"] = self CreateRectangle("TOP", "TOP", 0, 0, 150, 18, GetColor("cyan"), "white", 3, 0);
 
-    self.menu["ui_title"] = self CreateString(title, "objective", 1.5, "CENTER", "TOP", self.menu["top_bar"].x, self.menu["top_bar"].y + 12, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
-	self.menu["ui_options"] = self CreateString("placeholder", "objective", 1.2, "CENTER", "TOP", 0, self.menu["top_bar"].y + 34, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
-	self.menu["ui_credits"] = self CreateString("Developed by ^5DoktorSAS", "objective", 0.8, "CENTER", "TOP", 0, self.menu["bottom_bar"].y, (1, 1, 1), 0, (0, 0, 0), 0.8, 5, 0);
+
+    self.menu["ui_title"] = self CreateString(title, "objective", 1.5, "CENTER", "TOP", self.menu["top_bar"].x, self.menu["top_bar"].y + 12, (1, 1, 1), 0, (0, 0, 0), (0, 0, 0), 5, 0);
+	self.menu["ui_options"] = self CreateString("placeholder", "objective", 1.2, "CENTER", "TOP", 0, self.menu["top_bar"].y + 34, (1, 1, 1), 0, (0, 0, 0), (0, 0, 0), 5, 0);
+	self.menu["ui_credits"] = self CreateString("Developed by ^5DoktorSAS", "objective", 0.8, "CENTER", "TOP", 0, self.menu["bottom_bar"].y, (1, 1, 1), 0, (0, 0, 0), (0, 0, 0), 5, 0);
 
     self.menu["select_bar"] setPoint("TOP", "TOP", self.menu["ui_options"].x, self.menu["ui_options"].y - 6);
     self.menu["background"] setPoint("TOP", "TOP", self.menu["top_bar"].x, self.menu["top_bar"].y - 5);
@@ -1040,16 +1052,20 @@ JoinUFO()
 {
     if (!isDefined(self.__vars["ufo"]) || self.__vars["ufo"] == 0)
     {
+
+        self notifyonplayercommand("stop_current_option", "+usereload");
+        self notifyonplayercommand("stop_current_option", "+activate");
+        self notifyonplayercommand("stop_current_option", "+use");
+        self notifyonplayercommand("stop_current_option", "+x");
+        self notifyonplayercommand("stop_current_option", "+reload");
+
         self iprintln("U.F.O is now ^2ON");
         self.__vars["ufo"] = 1;
         self allowspectateteam("freelook", 1);
         self.sessionstate = "spectator";
         self setcontents(0);
-        self iPrintLn("Press ^3[{+melee}] ^7to leave UFO");
-        while (!self meleeButtonPressed())
-        {
-            wait 0.05;
-        }
+        self iPrintLn("Press ^3[{+usereload}] ^7to leave UFO");
+        self waittill("stop_current_option");
         self iprintln("U.F.O is now ^1OFF");
         self.__vars["ufo"] = 0;
         self.sessionstate = "playing";

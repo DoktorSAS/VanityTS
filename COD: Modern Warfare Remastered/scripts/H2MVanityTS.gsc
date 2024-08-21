@@ -503,9 +503,10 @@ buildMenu()
 	self.menu["background"] = self CreateRectangle("TOP", "TOP", 0, 0, 150, 40, GetColor("cyan"), "black", 1, 0);
 	self.menu["bottom_bar"] = self CreateRectangle("TOP", "TOP", 0, 0, 150, 18, GetColor("cyan"), "white", 3, 0);
 
-    self.menu["ui_title"] = self CreateString(title, "objective", 1.5, "CENTER", "TOP", self.menu["top_bar"].x, self.menu["top_bar"].y + 12, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
-	self.menu["ui_options"] = self CreateString("placeholder", "objective", 1.2, "CENTER", "TOP", 0, self.menu["top_bar"].y + 34, (1, 1, 1), 0, (0, 0, 0), 0.5, 5, 0);
-	self.menu["ui_credits"] = self CreateString("Developed by ^5DoktorSAS", "objective", 0.8, "CENTER", "TOP", 0, self.menu["bottom_bar"].y, (1, 1, 1), 0, (0, 0, 0), 0.8, 5, 0);
+
+    self.menu["ui_title"] = self CreateString(title, "objective", 1.5, "CENTER", "TOP", self.menu["top_bar"].x, self.menu["top_bar"].y + 12, (1, 1, 1), 0, (0, 0, 0), (0, 0, 0), 5, 0);
+	self.menu["ui_options"] = self CreateString("placeholder", "objective", 1.2, "CENTER", "TOP", 0, self.menu["top_bar"].y + 34, (1, 1, 1), 0, (0, 0, 0), (0, 0, 0), 5, 0);
+	self.menu["ui_credits"] = self CreateString("Developed by ^5DoktorSAS", "objective", 0.8, "CENTER", "TOP", 0, self.menu["bottom_bar"].y, (1, 1, 1), 0, (0, 0, 0), (0, 0, 0), 5, 0);
 
     self.menu["select_bar"] setPoint("TOP", "TOP", self.menu["ui_options"].x, self.menu["ui_options"].y - 6);
     self.menu["background"] setPoint("TOP", "TOP", self.menu["top_bar"].x, self.menu["top_bar"].y - 5);
