@@ -14,7 +14,7 @@ The VanityTS is a trickshot gamemode mod ported over multiple clients and games.
 
 
 ## Usage
-Download the files from the git and open the folder of the game you want to play with. After that select the folder or the folders inside and copy it into the correct appdata folder, such as `%localappdata%\plutonium\storaga\<client>\` or `%localappdata%\xlabs\data\<client>\` where the client can be `T4`,`T5`,`T6`,`IW5`,`iw6x`,`s1x` (for Call of Duty: Modern Warfare Remastered `%localappdata%\h1-mod\data\cdata\` is the correct folder) while for `T7` put the compiled file in `BOIII Game Folder\BOIII\scripts\maps\mp\gametypes\` or put the `mp_vanityts` into the mods folder
+Download the files from the git and open the folder of the game you want to play with. After that select the folder or the folders inside and copy it into the correct appdata folder, such as `%localappdata%\plutonium\storaga\<client>\` or `%localappdata%\xlabs\data\<client>\` where the client can be `T4`,`T5`,`T6`,`IW5`. In the cases of `iw6x`, `s1x`, `h1-mod` would be different, for exemple H1-MOD Call of Duty: Modern Warfare Remastered `%localappdata%\h1-mod\data\cdata\` is the correct folder, for `AlterWare` clients would be `%gameclient%\<client>\scripts\`  ) while for `T7` put the compiled file in `BOIII Game Folder\BOIII\scripts\maps\mp\gametypes\` or put the `mp_vanityts` into the mods folder
 
 ### Binds
 
