@@ -1277,12 +1277,12 @@ inizializeBots()
 
     if (bots == 0 && getDvar("g_gametype") == "sd" || getDvar("g_gametype") == "sr")
     {
-        cmdexec("bot 2");
+        cmdexec("spawnbot 2");
         // spawn_bots(2, game["defenders"]);
     }
     else if (bots == 0)
     {
-        cmdexec("bot " + getDvarInt("sv_maxclients") / 2);
+        cmdexec("spawnbot " + getDvarInt("sv_maxclients") / 2);
         // spawn_bots(getDvarInt("sv_maxclients") / 2, game["defenders"]);
     }
 }
@@ -1329,7 +1329,7 @@ serverBotFill()
             while (level.players.size < 14 && !level.gameended)
             {
                 // self spawnBots(1);
-                cmdexec("bot 1");
+                cmdexec("spawnbot 1");
                 wait 1;
             }
             if (level.players.size >= 17 && contBots() > 0)
@@ -1339,7 +1339,7 @@ serverBotFill()
         {
             while (level.players.size < 9 && !level.gameended)
             {
-                cmdexec("bot 1");
+                cmdexec("spawnbot 1");
                 wait 1;
             }
         }
